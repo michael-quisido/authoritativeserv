@@ -9,7 +9,7 @@ export default function Home() {
         width={256}
         height={256}
       />
-      <p className="text-sm text-gray-500">KMCQ URL Checkpoint</p>
+      <p className="text-sm text-gray-500">KMCQ GmbH URL Checkpoint</p>
     </div>
   );
 }
