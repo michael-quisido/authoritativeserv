@@ -10,6 +10,7 @@ export default function Home() {
         height={256}
       />
       <p className="text-sm text-gray-500">KMCQ GmbH URL Checkpoint</p>
+      <p className="text-sm text-gray-500">A URL link Security features.</p>
     </div>
   );
 }
