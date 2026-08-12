@@ -1,20 +1,14 @@
-import pool from "@/lib/db";
+import Image from "next/image";
 
-export default async function Home() {
-  let dbOk = false;
-  try {
-    const [rows] = await pool.query("SELECT 1 AS test");
-    dbOk = true;
-  } catch {
-    dbOk = false;
-  }
-
+export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-4xl font-bold">Mike Quisido</h1>
-      <p className="text-sm text-gray-500">
-        Database: {dbOk ? "Connected" : "Disconnected"}
-      </p>
+    <div className="flex min-h-screen items-center justify-center">
+      <Image
+        src="/images/orange-shield.png"
+        alt="Orange shield"
+        width={256}
+        height={256}
+      />
     </div>
   );
 }
