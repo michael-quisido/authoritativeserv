@@ -79,5 +79,12 @@ assert_true(admin_password_ok($pdo, 'admin_security', 'wrongpass') === null, 'ad
 $pdo->prepare('DELETE FROM verification_codes WHERE user_id = ?')->execute([$userId]);
 $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
 
+// --- gate tokens ---
+gate_issue(99);
+assert_true(gate_valid(99), 'gate valid after issue');
+assert_true(!gate_valid(999), 'unknown gate invalid');
+$_SESSION['gates'][99]['expires'] = time() - 1;
+assert_true(!gate_valid(99), 'gate invalid after expiry');
+
 echo "\n$passed passed, $failed failed\n";
 exit($failed === 0 ? 0 : 1);
