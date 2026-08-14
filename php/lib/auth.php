@@ -123,7 +123,9 @@ function admin_password_ok(PDO $pdo, string $username, string $password): ?int
     $stmt = $pdo->prepare('SELECT id, password_hash FROM admins WHERE username = ? LIMIT 1');
     $stmt->execute([$username]);
     $row = $stmt->fetch();
-    if (!$row || !password_verify($password, (string) $row['password_hash'])) {
+    $hash = $row ? (string) $row['password_hash'] : '$2y$12$n9FAyfQMhdNYNVku.aDm4eReZhwO7mEiwajXVjrvrKr6l2f4KgqiO';
+    $ok = password_verify($password, $hash);
+    if (!$row || !$ok) {
         return null;
     }
     return (int) $row['id'];
