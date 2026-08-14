@@ -1,0 +1,8 @@
+{
+  "name": "kmcq/url-checkpoint",
+  "description": "KMCQ GmbH URL Checkpoint - secure PHP URL gating admin app",
+  "require": {
+    "php": ">=8.1",
+    "phpmailer/phpmailer": "^6.9"
+  }
+}
