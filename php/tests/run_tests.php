@@ -9,6 +9,8 @@ require __DIR__ . '/../lib/db.php';
 require __DIR__ . '/../lib/auth.php';
 require __DIR__ . '/../lib/guard.php';
 
+ob_start(); // buffer output so session cookie headers are not sent prematurely
+
 $passed = 0; $failed = 0;
 function assert_true(bool $cond, string $name): void {
     global $passed, $failed;

@@ -24,12 +24,18 @@ function start_session(): void
 function csrf_token(): string
 {
     start_session();
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
     return $_SESSION['csrf'];
 }
 
 function csrf_verify(?string $token): bool
 {
     start_session();
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
     return is_string($token) && $token !== '' && hash_equals($_SESSION['csrf'], $token);
 }
 
