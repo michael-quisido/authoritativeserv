@@ -41,5 +41,42 @@ assert_true(csrf_verify($tok), 'csrf valid token');
 assert_true(!csrf_verify('wrong'), 'csrf wrong token');
 assert_true(!csrf_verify(null), 'csrf null token');
 
+// --- rate limiting ---
+$pdo = db();
+$scope = 'test:' . bin2hex(random_bytes(6));
+for ($i = 0; $i < 3; $i++) { record_rate_limit($pdo, $scope); }
+assert_true(!check_rate_limit($pdo, $scope), 'rate limit blocks after 3');
+$pdo->prepare('DELETE FROM email_rate_limits WHERE scope_key = ?')->execute([$scope]);
+
+// --- user code issue/verify ---
+$uid = 'testuser_' . bin2hex(random_bytes(4));
+$stmt = $pdo->prepare('INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)');
+$stmt->execute([$uid, password_hash('pw12345678', PASSWORD_BCRYPT), $uid . '@example.com']);
+$userId = (int) $pdo->lastInsertId();
+
+$code = issue_code($pdo, 'user', null, $userId, null);
+assert_true(verify_code($pdo, 'user', null, $userId, null, 'WRONGWRONG') === false, 'wrong code rejected');
+assert_true(verify_code($pdo, 'user', null, $userId, null, $code) === true, 'correct code accepted');
+assert_true(verify_code($pdo, 'user', null, $userId, null, $code) === false, 'code is single use');
+
+$code2 = issue_code($pdo, 'user', null, $userId, null);
+for ($i = 0; $i < 5; $i++) { verify_code($pdo, 'user', null, $userId, null, 'BADCODE0'); }
+assert_true(verify_code($pdo, 'user', null, $userId, null, $code2) === false, 'code locked after 5 attempts');
+
+$stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id = ?');
+$stmt->execute([$userId]);
+$hash = (string) $stmt->fetchColumn();
+assert_true(password_verify('pw12345678', $hash), 'user password verifies');
+
+// --- admin password check ---
+$stmt = $pdo->prepare('SELECT id FROM admins WHERE username = ? LIMIT 1');
+$stmt->execute(['admin_security']);
+$adminId = (int) $stmt->fetchColumn();
+assert_true($adminId > 0, 'seeded admin exists');
+assert_same($adminId, admin_password_ok($pdo, 'admin_security', 'pass_admin_security7777'), 'admin password ok');
+assert_true(admin_password_ok($pdo, 'admin_security', 'wrongpass') === null, 'admin password wrong');
+
+$pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
+
 echo "\n$passed passed, $failed failed\n";
 exit($failed === 0 ? 0 : 1);

@@ -71,3 +71,59 @@ function hash_code(string $code): string
 {
     return hash_hmac('sha256', $code, CODE_KEY);
 }
+
+function record_rate_limit(PDO $pdo, string $scope): void
+{
+    $pdo->prepare('DELETE FROM email_rate_limits WHERE scope_key = ? AND window_start < (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)')->execute([$scope]);
+    $pdo->prepare('INSERT INTO email_rate_limits (scope_key, window_start) VALUES (?, NOW())')->execute([$scope]);
+}
+
+function check_rate_limit(PDO $pdo, string $scope): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM email_rate_limits WHERE scope_key = ? AND window_start >= (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)');
+    $stmt->execute([$scope]);
+    return ((int) $stmt->fetchColumn()) < RATE_LIMIT_MAX;
+}
+
+function issue_code(PDO $pdo, string $type, ?int $adminId, ?int $userId, ?int $ruleId): string
+{
+    $code = generate_code(CODE_LENGTH);
+    $stmt = $pdo->prepare('INSERT INTO verification_codes (type, admin_id, user_id, rule_id, code_hash, expires_at)
+        VALUES (?, ?, ?, ?, ?, NOW() + INTERVAL ' . (int) CODE_TTL . ' SECOND)');
+    $stmt->execute([$type, $adminId, $userId, $ruleId, hash_code($code)]);
+    return $code;
+}
+
+function verify_code(PDO $pdo, string $type, ?int $adminId, ?int $userId, ?int $ruleId, string $input): bool
+{
+    $stmt = $pdo->prepare('SELECT id, code_hash, attempts, expires_at, used_at FROM verification_codes
+        WHERE type = ? AND admin_id <=> ? AND user_id <=> ? AND rule_id <=> ? AND used_at IS NULL
+        ORDER BY id DESC LIMIT 1');
+    $stmt->execute([$type, $adminId, $userId, $ruleId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return false;
+    }
+    if ((int) $row['attempts'] >= CODE_MAX_ATTEMPTS || strtotime((string) $row['expires_at']) < time()) {
+        $pdo->prepare('UPDATE verification_codes SET used_at = NOW() WHERE id = ?')->execute([(int) $row['id']]);
+        return false;
+    }
+    $ok = hash_equals((string) $row['code_hash'], hash_code($input));
+    if ($ok) {
+        $pdo->prepare('UPDATE verification_codes SET used_at = NOW() WHERE id = ?')->execute([(int) $row['id']]);
+    } else {
+        $pdo->prepare('UPDATE verification_codes SET attempts = attempts + 1 WHERE id = ?')->execute([(int) $row['id']]);
+    }
+    return $ok;
+}
+
+function admin_password_ok(PDO $pdo, string $username, string $password): ?int
+{
+    $stmt = $pdo->prepare('SELECT id, password_hash FROM admins WHERE username = ? LIMIT 1');
+    $stmt->execute([$username]);
+    $row = $stmt->fetch();
+    if (!$row || !password_verify($password, (string) $row['password_hash'])) {
+        return null;
+    }
+    return (int) $row['id'];
+}
