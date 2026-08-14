@@ -1158,7 +1158,7 @@ BASE="http://127.0.0.1:$PORT"
 CJAR="$(mktemp)"
 export MAIL_MODE=log
 
-php -S "127.0.0.1:$PORT" index.php >/tmp/kmcq_srv.log 2>&1 &
+php8.2 -S "127.0.0.1:$PORT" index.php >/tmp/kmcq_srv.log 2>&1 &
 SRV_PID=$!
 trap 'kill $SRV_PID 2>/dev/null; rm -f "$CJAR"' EXIT
 sleep 1
@@ -1192,10 +1192,6 @@ curl -s -D /tmp/hdr2 -o /dev/null -b "$CJAR" -c "$CJAR" \
 loc=$(grep -i '^location:' /tmp/hdr2 | tr -d '\r' | cut -d' ' -f2)
 [ "$loc" = "/settings" ] || fail "code verify should redirect to /settings (got $loc)"
 
-# /settings reachable with verified session
-status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" "$BASE/settings")
-[ "$status" = "200" ] || fail "settings should be 200 after verified login (got $status)"
-
 # missing CSRF rejected
 status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" \
   --data "code=$ADMIN_CODE" "$BASE/login/code")
@@ -1203,6 +1199,7 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" \
 
 echo "ALL INTEGRATION TESTS PASSED"
 ```
+> NOTE: the `/settings` reachable check is added in Task 10 (after the `/settings` route exists).
 
 - [ ] **Step 4: Run the integration test, verify it passes**
 
@@ -1374,7 +1371,18 @@ Expected: "No syntax errors detected".
 - [ ] **Step 4: Run integration test (login part still passes)**
 
 Run: `bash tests/integration.sh`
-Expected: "ALL INTEGRATION TESTS PASSED".
+Expected: "ALL INTEGRATION TESTS PASSED". Append to `php/tests/integration.sh` after the "missing CSRF rejected" block (before the final echo):
+
+```bash
+# /settings reachable with verified session
+status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" "$BASE/settings")
+[ "$status" = "200" ] || fail "settings should be 200 after verified login (got $status)"
+
+# settings page renders users and rules sections
+body=$(curl -s -b "$CJAR" -c "$CJAR" "$BASE/settings")
+echo "$body" | grep -q 'Settings Dashboard' || fail "settings dashboard not rendered"
+echo "$body" | grep -q 'Protected URL Rules' || fail "rules section missing"
+```
 
 - [ ] **Step 5: Commit**
 
