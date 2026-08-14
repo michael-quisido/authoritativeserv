@@ -76,6 +76,7 @@ assert_true($adminId > 0, 'seeded admin exists');
 assert_same($adminId, admin_password_ok($pdo, 'admin_security', 'pass_admin_security7777'), 'admin password ok');
 assert_true(admin_password_ok($pdo, 'admin_security', 'wrongpass') === null, 'admin password wrong');
 
+$pdo->prepare('DELETE FROM verification_codes WHERE user_id = ?')->execute([$userId]);
 $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
 
 echo "\n$passed passed, $failed failed\n";
