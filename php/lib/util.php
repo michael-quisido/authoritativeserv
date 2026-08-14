@@ -40,7 +40,5 @@ function render(string $view, array $vars = []): string
 function layout(string $content, string $pageTitle = '', bool $wide = false): void
 {
     $page_title = $pageTitle;
-    $content = $content;
-    $wide = $wide;
     require __DIR__ . '/../views/layout.php';
 }
