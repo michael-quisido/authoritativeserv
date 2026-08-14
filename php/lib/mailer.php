@@ -20,6 +20,7 @@ function send_email(string $to, string $subject, string $body): bool
         $mail->Password = MAIL_SMTP_PASS;
         $mail->Port = MAIL_SMTP_PORT;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Timeout = 10;
         $mail->CharSet = 'UTF-8';
         $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
         $mail->addReplyTo(MAIL_FROM, MAIL_FROM_NAME);
