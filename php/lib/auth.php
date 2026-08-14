@@ -72,27 +72,18 @@ function hash_code(string $code): string
     return hash_hmac('sha256', $code, CODE_KEY);
 }
 
-function record_rate_limit(PDO $pdo, string $scope): void
-{
-    $pdo->prepare('DELETE FROM email_rate_limits WHERE scope_key = ? AND window_start < (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)')->execute([$scope]);
-    $pdo->prepare('INSERT INTO email_rate_limits (scope_key, window_start) VALUES (?, NOW())')->execute([$scope]);
-}
-
-function check_rate_limit(PDO $pdo, string $scope): bool
-{
-    $stmt = $pdo->prepare('SELECT COUNT(*) FROM email_rate_limits WHERE scope_key = ? AND window_start >= (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)');
-    $stmt->execute([$scope]);
-    return ((int) $stmt->fetchColumn()) < RATE_LIMIT_MAX;
-}
-
 function try_record_rate_limit(PDO $pdo, string $scope): bool
 {
-    $stmt = $pdo->prepare('INSERT INTO email_rate_limits (scope_key, window_start)
-        SELECT ?, NOW() FROM dual
-        WHERE (SELECT COUNT(*) FROM email_rate_limits
-            WHERE scope_key = ? AND window_start >= (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)) < ' . (int) RATE_LIMIT_MAX);
-    $stmt->execute([$scope, $scope]);
-    return $stmt->rowCount() === 1;
+    try {
+        $stmt = $pdo->prepare('INSERT INTO email_rate_limits (scope_key, window_start)
+            SELECT ?, NOW() FROM dual
+            WHERE (SELECT COUNT(*) FROM email_rate_limits
+                WHERE scope_key = ? AND window_start >= (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)) < ' . (int) RATE_LIMIT_MAX);
+        $stmt->execute([$scope, $scope]);
+        return $stmt->rowCount() === 1;
+    } catch (PDOException $e) {
+        return false; // fail closed under contention
+    }
 }
 
 function issue_code(PDO $pdo, string $type, ?int $adminId, ?int $userId, ?int $ruleId): string

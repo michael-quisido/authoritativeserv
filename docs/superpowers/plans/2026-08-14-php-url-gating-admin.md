@@ -445,8 +445,8 @@ Insert before the final `echo "\n$passed passed..."` line:
 // --- rate limiting ---
 $pdo = db();
 $scope = 'test:' . bin2hex(random_bytes(6));
-for ($i = 0; $i < 3; $i++) { record_rate_limit($pdo, $scope); }
-assert_true(!check_rate_limit($pdo, $scope), 'rate limit blocks after 3');
+for ($i = 0; $i < 3; $i++) { assert_true(try_record_rate_limit($pdo, $scope), "rate allow $i"); }
+assert_true(!try_record_rate_limit($pdo, $scope), 'rate limit blocks after 3');
 $pdo->prepare('DELETE FROM email_rate_limits WHERE scope_key = ?')->execute([$scope]);
 
 // --- user code issue/verify ---
@@ -483,28 +483,24 @@ $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
 - [ ] **Step 2: Run test, verify new cases fail**
 
 Run: `php tests/run_tests.php`
-Expected: new cases FAIL with "Call to undefined function record_rate_limit()".
+Expected: new cases FAIL with "Call to undefined function try_record_rate_limit()".
 
 - [ ] **Step 3: Append to `php/lib/auth.php`**
 
 ```php
-function record_rate_limit(PDO $pdo, string $scope): void
-{
-    $pdo->prepare('DELETE FROM email_rate_limits WHERE scope_key = ? AND window_start < (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)')->execute([$scope]);
-    $pdo->prepare('INSERT INTO email_rate_limits (scope_key, window_start) VALUES (?, NOW())')->execute([$scope]);
-}
-
-function check_rate_limit(PDO $pdo, string $scope): bool
-{
-    $stmt = $pdo->prepare('SELECT COUNT(*) FROM email_rate_limits WHERE scope_key = ? AND window_start >= (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)');
-    $stmt->execute([$scope]);
-    return ((int) $stmt->fetchColumn()) < RATE_LIMIT_MAX;
-}
-
 function try_record_rate_limit(PDO $pdo, string $scope): bool
 {
-    $stmt = $pdo->prepare('INSERT INTO email_rate_limits (scope_key, window_start)
-        SELECT ?, NOW() FROM dual
+    try {
+        $stmt = $pdo->prepare('INSERT INTO email_rate_limits (scope_key, window_start)
+            SELECT ?, NOW() FROM dual
+            WHERE (SELECT COUNT(*) FROM email_rate_limits
+                WHERE scope_key = ? AND window_start >= (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)) < ' . (int) RATE_LIMIT_MAX);
+        $stmt->execute([$scope, $scope]);
+        return $stmt->rowCount() === 1;
+    } catch (PDOException $e) {
+        return false; // fail closed under contention
+    }
+}
         WHERE (SELECT COUNT(*) FROM email_rate_limits
             WHERE scope_key = ? AND window_start >= (NOW() - INTERVAL ' . (int) RATE_LIMIT_WINDOW . ' SECOND)) < ' . (int) RATE_LIMIT_MAX);
     $stmt->execute([$scope, $scope]);
@@ -1598,4 +1594,4 @@ git commit -m "docs(php): add README and final verification"
 
 **Placeholder scan:** all steps contain concrete code/commands. No TBD/TODO.
 
-**Type/name consistency:** `gate_issue`/`gate_valid`, `issue_code`/`verify_code`, `record_rate_limit`/`check_rate_limit`, `handle_gate` (defined in `routes_gate.php`, required before call) — names match across files. `$_SESSION['admin_verified']` stores the admin id int, consistent in `h_admin_code`, `require_admin_verified`, `h_settings_password`.
+**Type/name consistency:** `gate_issue`/`gate_valid`, `issue_code`/`verify_code`, `try_record_rate_limit`, `handle_gate` (defined in `routes_gate.php`, required before call) — names match across files. `$_SESSION['admin_verified']` stores the admin id int, consistent in `h_admin_code`, `require_admin_verified`, `h_settings_password`.
