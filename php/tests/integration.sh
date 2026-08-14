@@ -51,4 +51,13 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" \
   --data "code=$ADMIN_CODE" "$BASE/login/code")
 [ "$status" = "403" ] || fail "missing csrf should be 403 (got $status)"
 
+# /settings reachable with verified session
+status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" "$BASE/settings")
+[ "$status" = "200" ] || fail "settings should be 200 after verified login (got $status)"
+
+# settings page renders users and rules sections
+body=$(curl -s -b "$CJAR" -c "$CJAR" "$BASE/settings")
+echo "$body" | grep -q 'Settings Dashboard' || fail "settings dashboard not rendered"
+echo "$body" | grep -q 'Protected URL Rules' || fail "rules section missing"
+
 echo "ALL INTEGRATION TESTS PASSED"
