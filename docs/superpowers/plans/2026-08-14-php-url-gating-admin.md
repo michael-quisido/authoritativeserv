@@ -1029,13 +1029,15 @@ function h_login(): void
 function h_admin_code(): void
 {
     start_session();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        require_post();
+        require_csrf();
+    }
     if (empty($_SESSION['admin_pw_ok'])) {
         redirect('/login');
     }
     $errors = [];
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        require_post();
-        require_csrf();
         $input = trim((string) ($_POST['code'] ?? ''));
         if (!preg_match('/^[A-Za-z0-9]{8}$/', $input)) {
             $errors[] = 'Code must be exactly 8 alphanumeric characters.';
