@@ -44,8 +44,8 @@ assert_true(!csrf_verify(null), 'csrf null token');
 // --- rate limiting ---
 $pdo = db();
 $scope = 'test:' . bin2hex(random_bytes(6));
-for ($i = 0; $i < 3; $i++) { record_rate_limit($pdo, $scope); }
-assert_true(!check_rate_limit($pdo, $scope), 'rate limit blocks after 3');
+for ($i = 0; $i < 3; $i++) { assert_true(try_record_rate_limit($pdo, $scope), "rate allow $i"); }
+assert_true(!try_record_rate_limit($pdo, $scope), 'rate limit blocks after 3');
 $pdo->prepare('DELETE FROM email_rate_limits WHERE scope_key = ?')->execute([$scope]);
 
 // --- user code issue/verify ---
