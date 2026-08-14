@@ -107,8 +107,8 @@ All tables in `authnamedb`.
 - `id` INT PK AI
 - `scope_key` VARCHAR(255) NOT NULL (e.g. `admin:<id>` or `rule:<id>`)
 - `window_start` DATETIME NOT NULL
-- `sent_count` INT NOT NULL DEFAULT 0
 - INDEX (`scope_key`, `window_start`)
+- Note: one row is inserted per send; rate limiting counts rows within the window (no `sent_count` column needed).
 
 ## Security implementation notes
 
