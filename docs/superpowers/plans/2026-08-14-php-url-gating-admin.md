@@ -1326,9 +1326,11 @@ function h_settings_rules_add(): void
     $real = '/' . trim((string) ($_POST['real_path'] ?? ''), '/');
     $userId = (int) ($_POST['user_id'] ?? 0);
     $reserved = ['/login', '/login/code', '/login/resend', '/logout', '/settings', '/settings/users/add', '/settings/users/delete', '/settings/rules/add', '/settings/rules/delete', '/settings/password'];
+    $dummyLower = strtolower($dummy);
+    $realLower = strtolower($real);
     if ($dummy === '/' || $real === '/' || $userId < 1) {
         flash_set('err', 'Dummy path, real path and a user are required.');
-    } elseif (in_array($dummy, $reserved, true) || in_array($real, $reserved, true)) {
+    } elseif (in_array($dummyLower, $reserved, true) || in_array($realLower, $reserved, true)) {
         flash_set('err', 'Dummy and real paths must not collide with app routes.');
     } else {
         $stmt = $pdo->prepare('INSERT INTO url_rules (dummy_path, real_path, associated_user_id) VALUES (?, ?, ?)');
