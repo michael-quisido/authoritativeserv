@@ -6,11 +6,13 @@ Secure PHP app: admin login (password + email code), settings dashboard, and dum
 - PHP 8.1+ (this machine: `php8.2` — the default `php` 8.5 lacks the `pdo_mysql` extension), MySQL, Composer, Apache (with mod_rewrite) or the PHP built-in server.
 
 ## Setup
-1. `cd php && composer install`
-2. Apply schema: `mysql -u userauth -ppassuserauth77 < php/schema.sql`
-3. Configure SMTP in `php/config.php` (defaults point at Gmail SMTP; `MAIL_MODE=log` writes emails to `storage/mail.log` for local testing).
+All commands below run from the `php/` directory.
+
+1. Install dependencies: `composer install`
+2. Apply schema: `mysql -u userauth -ppassuserauth77 authnamedb < schema.sql`
+3. Configure SMTP in `config.php` (defaults point at Gmail SMTP; `MAIL_MODE=log` writes emails to `storage/mail.log` for local testing).
 4. Serve the `php/` directory as the document root (Apache + `.htaccess`) or run locally:
-   `cd php && MAIL_MODE=log php8.2 -S localhost:8080 index.php`
+   `MAIL_MODE=log php8.2 -S localhost:8080 index.php`
 
 ## Login
 - URL: `/login`
@@ -24,10 +26,12 @@ Secure PHP app: admin login (password + email code), settings dashboard, and dum
 
 ## Security notes
 - Codes: 8 alphanumeric chars, HMAC-SHA256 hashed in DB, one-time, 10-min expiry, 5-attempt limit, 3-send/10-min rate limit.
-- Passwords: bcrypt. Sessions: httponly, SameSite=Strict, Secure behind HTTPS.
+- Passwords: bcrypt. Sessions: httponly, SameSite=Strict.
 - CSRF tokens on all POST forms; PDO prepared statements; output escaped.
-- Override secrets via env vars (DB_*, MAIL_*, CODE_KEY) instead of editing defaults.
+- Behind HTTPS, export `SESSION_SECURE=1` so session cookies are sent only over TLS (plain HTTP dev runs keep it unset).
+- Override secrets via env vars (DB_*, MAIL_*, CODE_KEY, SESSION_SECURE) instead of editing the dev defaults in `config.php`.
 
 ## Tests
-- Unit: `cd php && php8.2 tests/run_tests.php && php8.2 tests/test_mailer.php`
-- Integration: `cd php && bash tests/integration.sh`
+Run from the `php/` directory (requires a running MySQL with the seeded credentials):
+- Unit: `php8.2 tests/run_tests.php && php8.2 tests/test_mailer.php`
+- Integration: `bash tests/integration.sh`

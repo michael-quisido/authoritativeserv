@@ -58,8 +58,8 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" "$BASE/set
 
 # settings page renders users and rules sections
 body=$(curl -s -b "$CJAR" -c "$CJAR" "$BASE/settings")
-echo "$body" | grep -q 'Settings Dashboard' || fail "settings dashboard not rendered"
-echo "$body" | grep -q 'Protected URL Rules' || fail "rules section missing"
+grep -q 'Settings Dashboard' <<< "$body" || fail "settings dashboard not rendered"
+grep -q 'Protected URL Rules' <<< "$body" || fail "rules section missing"
 
 # settings POST without csrf rejected
 status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" \
