@@ -24,7 +24,7 @@
 - Create: `php/lib/` (directory)
 - Create: `php/views/` (directory)
 
-- [ ] **Step 1: Create the directory tree and composer.json**
+- [x] **Step 1: Create the directory tree and composer.json**
 
 ```bash
 mkdir -p php/lib php/views php/tests php/storage
@@ -43,7 +43,7 @@ mkdir -p php/lib php/views php/tests php/storage
 }
 ```
 
-- [ ] **Step 2: Create `php/config.php`**
+- [x] **Step 2: Create `php/config.php`**
 
 ```php
 <?php
@@ -78,7 +78,7 @@ define('MAIL_FROM_NAME', 'KMCQ GmbH URL Checkpoint');
 define('MAIL_LOG_FILE', __DIR__ . '/storage/mail.log');
 ```
 
-- [ ] **Step 3: Create `php/.htaccess`**
+- [x] **Step 3: Create `php/.htaccess`**
 
 ```apache
 RewriteEngine On
@@ -96,18 +96,18 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
 ```
 
-- [ ] **Step 4: Create `php/.gitignore`**
+- [x] **Step 4: Create `php/.gitignore`**
 
 ```gitignore
 storage/mail.log
 ```
 
-- [ ] **Step 5: Install PHPMailer and verify**
+- [x] **Step 5: Install PHPMailer and verify**
 
 Run: `cd php && composer install`
 Expected: "Package operations: 1 install" and `vendor/autoload.php` exists.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add php
@@ -121,7 +121,7 @@ git commit -m "feat(php): scaffold PHP URL checkpoint project"
 **Files:**
 - Create: `php/schema.sql`
 
-- [ ] **Step 1: Create `php/schema.sql`**
+- [x] **Step 1: Create `php/schema.sql`**
 
 ```sql
 CREATE DATABASE IF NOT EXISTS authnamedb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -180,12 +180,12 @@ VALUES ('admin_security', '$2y$12$RK8WWhxx1RV7uaxe9ke5COJw5fUjafRaP.Z1OHCS.vki9Q
 ON DUPLICATE KEY UPDATE username = VALUES(username);
 ```
 
-- [ ] **Step 2: Apply the schema and verify tables**
+- [x] **Step 2: Apply the schema and verify tables**
 
 Run: `mysql -u userauth -ppassuserauth77 < php/schema.sql && mysql -u userauth -ppassuserauth77 -e "USE authnamedb; SHOW TABLES; SELECT username, email FROM admins;"`
 Expected: tables `admins users url_rules verification_codes email_rate_limits` listed, one admin row with `admin_security`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add php/schema.sql
@@ -200,7 +200,7 @@ git commit -m "feat(php): add schema and seed admin"
 - Create: `php/lib/util.php`
 - Create: `php/lib/db.php`
 
-- [ ] **Step 1: Create `php/lib/util.php`**
+- [x] **Step 1: Create `php/lib/util.php`**
 
 ```php
 <?php
@@ -251,7 +251,7 @@ function layout(string $content, string $pageTitle = '', bool $wide = false): vo
 }
 ```
 
-- [ ] **Step 2: Create `php/lib/db.php`**
+- [x] **Step 2: Create `php/lib/db.php`**
 
 ```php
 <?php
@@ -272,12 +272,12 @@ function db(): PDO
 }
 ```
 
-- [ ] **Step 3: Smoke test**
+- [x] **Step 3: Smoke test**
 
 Run: `php -r "require 'php/config.php'; require 'php/lib/db.php'; var_dump((int) db()->query('SELECT COUNT(*) FROM admins')->fetchColumn() > 0);"`
 Expected: `bool(true)` (proves PDO connects to the seeded DB).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add php/lib/util.php php/lib/db.php
@@ -292,7 +292,7 @@ git commit -m "feat(php): add util helpers and PDO connection"
 - Create: `php/lib/auth.php`
 - Create: `php/tests/run_tests.php`
 
-- [ ] **Step 1: Write the failing unit test harness `php/tests/run_tests.php`**
+- [x] **Step 1: Write the failing unit test harness `php/tests/run_tests.php`**
 
 ```php
 <?php
@@ -340,12 +340,12 @@ echo "\n$passed passed, $failed failed\n";
 exit($failed === 0 ? 0 : 1);
 ```
 
-- [ ] **Step 2: Run test, verify it fails**
+- [x] **Step 2: Run test, verify it fails**
 
 Run: `php tests/run_tests.php`
 Expected: FAIL with "Call to undefined function generate_code()".
 
-- [ ] **Step 3: Implement `php/lib/auth.php` (session, CSRF, codes)**
+- [x] **Step 3: Implement `php/lib/auth.php` (session, CSRF, codes)**
 
 ```php
 <?php
@@ -417,12 +417,12 @@ function hash_code(string $code): string
 }
 ```
 
-- [ ] **Step 4: Run tests, verify they pass**
+- [x] **Step 4: Run tests, verify they pass**
 
 Run: `php tests/run_tests.php`
 Expected: all PASS, "0 failed", exit code 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add php/lib/auth.php php/tests/run_tests.php
@@ -437,7 +437,7 @@ git commit -m "feat(php): sessions, CSRF, secure code generation"
 - Modify: `php/lib/auth.php` (append)
 - Modify: `php/tests/run_tests.php` (append DB tests)
 
-- [ ] **Step 1: Append failing DB tests to `php/tests/run_tests.php`**
+- [x] **Step 1: Append failing DB tests to `php/tests/run_tests.php`**
 
 Insert before the final `echo "\n$passed passed..."` line:
 
@@ -480,12 +480,12 @@ assert_true(admin_password_ok($pdo, 'admin_security', 'wrongpass') === null, 'ad
 $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
 ```
 
-- [ ] **Step 2: Run test, verify new cases fail**
+- [x] **Step 2: Run test, verify new cases fail**
 
 Run: `php tests/run_tests.php`
 Expected: new cases FAIL with "Call to undefined function try_record_rate_limit()".
 
-- [ ] **Step 3: Append to `php/lib/auth.php`**
+- [x] **Step 3: Append to `php/lib/auth.php`**
 
 ```php
 function try_record_rate_limit(PDO $pdo, string $scope): bool
@@ -553,12 +553,12 @@ function admin_password_ok(PDO $pdo, string $username, string $password): ?int
 }
 ```
 
-- [ ] **Step 4: Run tests, verify they pass**
+- [x] **Step 4: Run tests, verify they pass**
 
 Run: `php tests/run_tests.php`
 Expected: all PASS, "0 failed", exit code 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add php/lib/auth.php php/tests/run_tests.php
@@ -573,7 +573,7 @@ git commit -m "feat(php): rate limiting, code issue/verify, admin password check
 - Create: `php/lib/mailer.php`
 - Create: `php/tests/test_mailer.php`
 
-- [ ] **Step 1: Write failing test `php/tests/test_mailer.php`**
+- [x] **Step 1: Write failing test `php/tests/test_mailer.php`**
 
 ```php
 <?php
@@ -592,12 +592,12 @@ echo $pass ? "PASS: mailer log mode\n" : "FAIL: mailer log mode\n";
 exit($pass ? 0 : 1);
 ```
 
-- [ ] **Step 2: Run test, verify it fails**
+- [x] **Step 2: Run test, verify it fails**
 
 Run: `php tests/test_mailer.php`
 Expected: FAIL (undefined function `send_verification_email`).
 
-- [ ] **Step 3: Implement `php/lib/mailer.php`**
+- [x] **Step 3: Implement `php/lib/mailer.php`**
 
 ```php
 <?php
@@ -645,12 +645,12 @@ function send_verification_email(string $to, string $code): bool
 }
 ```
 
-- [ ] **Step 4: Run test, verify it passes**
+- [x] **Step 4: Run test, verify it passes**
 
 Run: `php tests/test_mailer.php`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add php/lib/mailer.php php/tests/test_mailer.php
@@ -665,7 +665,7 @@ git commit -m "feat(php): PHPMailer wrapper with log mode"
 - Create: `php/lib/guard.php`
 - Modify: `php/tests/run_tests.php` (append gate tests)
 
-- [ ] **Step 1: Append failing gate tests to `php/tests/run_tests.php`**
+- [x] **Step 1: Append failing gate tests to `php/tests/run_tests.php`**
 
 Insert before the final `echo "\n$passed passed..."` line:
 
@@ -678,12 +678,12 @@ $_SESSION['gates'][99]['expires'] = time() - 1;
 assert_true(!gate_valid(99), 'gate invalid after expiry');
 ```
 
-- [ ] **Step 2: Run test, verify new cases fail**
+- [x] **Step 2: Run test, verify new cases fail**
 
 Run: `php tests/run_tests.php`
 Expected: new cases FAIL with "Call to undefined function gate_issue()".
 
-- [ ] **Step 3: Implement `php/lib/guard.php`**
+- [x] **Step 3: Implement `php/lib/guard.php`**
 
 ```php
 <?php
@@ -713,12 +713,12 @@ function gate_valid(int $ruleId): bool
 }
 ```
 
-- [ ] **Step 4: Run tests, verify they pass**
+- [x] **Step 4: Run tests, verify they pass**
 
 Run: `php tests/run_tests.php`
 Expected: all PASS, exit code 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add php/lib/guard.php php/tests/run_tests.php
@@ -737,7 +737,7 @@ git commit -m "feat(php): server-side gate tokens"
 - Create: `php/views/gate.php`
 - Create: `php/views/real.php`
 
-- [ ] **Step 1: Create `php/views/layout.php`**
+- [x] **Step 1: Create `php/views/layout.php`**
 
 ```php
 <?php /** @var string $page_title */ /** @var string $content */ ?>
@@ -777,7 +777,7 @@ git commit -m "feat(php): server-side gate tokens"
 </html>
 ```
 
-- [ ] **Step 2: Create `php/views/login.php`**
+- [x] **Step 2: Create `php/views/login.php`**
 
 ```php
 <?php /** @var array $errors */ ?>
@@ -795,7 +795,7 @@ git commit -m "feat(php): server-side gate tokens"
 </form>
 ```
 
-- [ ] **Step 3: Create `php/views/admin_code.php`**
+- [x] **Step 3: Create `php/views/admin_code.php`**
 
 ```php
 <?php /** @var array $errors */ ?>
@@ -816,7 +816,7 @@ git commit -m "feat(php): server-side gate tokens"
 </form>
 ```
 
-- [ ] **Step 4: Create `php/views/settings.php`**
+- [x] **Step 4: Create `php/views/settings.php`**
 
 ```php
 <?php /** @var array $users */ /** @var array $rules */ ?>
@@ -901,7 +901,7 @@ git commit -m "feat(php): server-side gate tokens"
 </form>
 ```
 
-- [ ] **Step 5: Create `php/views/gate.php`**
+- [x] **Step 5: Create `php/views/gate.php`**
 
 ```php
 <?php /** @var array $rule */ /** @var array $errors */ /** @var bool $sent */ ?>
@@ -927,7 +927,7 @@ git commit -m "feat(php): server-side gate tokens"
 </form>
 ```
 
-- [ ] **Step 6: Create `php/views/real.php`**
+- [x] **Step 6: Create `php/views/real.php`**
 
 ```php
 <?php /** @var array $rule */ ?>
@@ -936,12 +936,12 @@ git commit -m "feat(php): server-side gate tokens"
 <p class="muted">Real path: <code><?= e($rule['real_path']) ?></code> &middot; Rule ID: <?= e((string) $rule['id']) ?></p>
 ```
 
-- [ ] **Step 7: Lint all views**
+- [x] **Step 7: Lint all views**
 
 Run: `for f in php/views/*.php; do php -l "$f"; done`
 Expected: "No syntax errors detected" for each file.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add php/views
@@ -957,7 +957,7 @@ git commit -m "feat(php): add views"
 - Create: `php/routes.php`
 - Create: `php/tests/integration.sh`
 
-- [ ] **Step 1: Create `php/index.php`**
+- [x] **Step 1: Create `php/index.php`**
 
 ```php
 <?php
@@ -982,7 +982,7 @@ route();
 exit;
 ```
 
-- [ ] **Step 2: Create `php/routes.php` (login flow first)**
+- [x] **Step 2: Create `php/routes.php` (login flow first)**
 
 ```php
 <?php
@@ -1148,7 +1148,7 @@ function route(): void
 }
 ```
 
-- [ ] **Step 3: Write the integration test `php/tests/integration.sh` (login part)**
+- [x] **Step 3: Write the integration test `php/tests/integration.sh` (login part)**
 
 ```bash
 #!/usr/bin/env bash
@@ -1209,12 +1209,12 @@ echo "ALL INTEGRATION TESTS PASSED"
 ```
 > NOTE: the `/settings` reachable check is added in Task 10 (after the `/settings` route exists).
 
-- [ ] **Step 4: Run the integration test, verify it passes**
+- [x] **Step 4: Run the integration test, verify it passes**
 
 Run: `bash tests/integration.sh`
 Expected: "ALL INTEGRATION TESTS PASSED". If `grep -oP` is unavailable, install `grep` with PCRE or use `sed`. If the server log shows issues, read `/tmp/kmcq_srv.log`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 chmod +x tests/integration.sh
@@ -1229,7 +1229,7 @@ git commit -m "feat(php): front controller and admin login flow"
 **Files:**
 - Modify: `php/routes.php` (add cases + handlers)
 
-- [ ] **Step 1: Add cases to the switch in `php/routes.php`**
+- [x] **Step 1: Add cases to the switch in `php/routes.php`**
 
 Replace the `default:` case block so the switch reads:
 
@@ -1274,7 +1274,7 @@ Replace the `default:` case block so the switch reads:
     }
 ```
 
-- [ ] **Step 2: Append handlers to `php/routes.php`**
+- [x] **Step 2: Append handlers to `php/routes.php`**
 
 ```php
 function h_settings(): void
@@ -1376,12 +1376,12 @@ function h_settings_password(): void
 }
 ```
 
-- [ ] **Step 3: Lint**
+- [x] **Step 3: Lint**
 
 Run: `php -l routes.php`
 Expected: "No syntax errors detected".
 
-- [ ] **Step 4: Run integration test (login part still passes)**
+- [x] **Step 4: Run integration test (login part still passes)**
 
 Run: `bash tests/integration.sh`
 Expected: "ALL INTEGRATION TESTS PASSED". Append to `php/tests/integration.sh` after the "missing CSRF rejected" block (before the final echo):
@@ -1466,7 +1466,7 @@ echo "ALL INTEGRATION TESTS PASSED"
 ```
 > The integration reset line also wipes `url_rules` and `users` so POST-handler tests are self-contained: `db()->exec("DELETE FROM url_rules"); db()->exec("DELETE FROM users");`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add php/routes.php
@@ -1481,7 +1481,7 @@ git commit -m "feat(php): settings handlers for users, rules, password"
 - Create: `php/routes_gate.php`
 - Modify: `php/tests/integration.sh` (append gate tests)
 
-- [ ] **Step 1: Create `php/routes_gate.php`**
+- [x] **Step 1: Create `php/routes_gate.php`**
 
 ```php
 <?php
@@ -1532,7 +1532,7 @@ function handle_gate(array $rule): void
 }
 ```
 
-- [ ] **Step 2: Append gate-flow tests to `php/tests/integration.sh`**
+- [x] **Step 2: Append gate-flow tests to `php/tests/integration.sh`**
 
 Insert before the final `echo "ALL INTEGRATION TESTS PASSED"` line:
 
@@ -1593,12 +1593,12 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -b "$GJAR2" -c "$GJAR2" "$BASE/t
 mysql -u userauth -ppassuserauth77 -e "USE authnamedb; DELETE FROM users WHERE id=$USER_ID" 2>/dev/null || true
 ```
 
-- [ ] **Step 3: Run the full integration test**
+- [x] **Step 3: Run the full integration test**
 
 Run: `bash tests/integration.sh`
 Expected: "ALL INTEGRATION TESTS PASSED". Check `/tmp/kmcq_srv.log` if a step fails.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add php/routes_gate.php php/tests/integration.sh
@@ -1612,7 +1612,7 @@ git commit -m "feat(php): dummy gate handler and real-path guard tests"
 **Files:**
 - Create: `php/README.md`
 
-- [ ] **Step 1: Create `php/README.md`**
+- [x] **Step 1: Create `php/README.md`**
 
 ```markdown
 # KMCQ GmbH URL Checkpoint
@@ -1654,7 +1654,7 @@ Run from the `php/` directory (requires a running MySQL with the seeded credenti
 - Integration: `bash tests/integration.sh`
 ```
 
-- [ ] **Step 2: Run all verification**
+- [x] **Step 2: Run all verification**
 
 Run:
 ```bash
@@ -1666,7 +1666,7 @@ bash tests/integration.sh
 ```
 Expected: no syntax errors, "0 failed" for unit tests, PASS for mailer, "ALL INTEGRATION TESTS PASSED".
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add php/README.md
