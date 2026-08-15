@@ -1,6 +1,8 @@
 import Image from "next/image";
+import { connection } from "next/server";
 
-export default function Home() {
+export default async function Home() {
+  await connection();
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4">
       <Image
