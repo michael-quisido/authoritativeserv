@@ -20,7 +20,8 @@ sleep 1
 fail() { echo "FAIL: $1"; exit 1; }
 
 get_csrf() {
-  curl -s -b "$CJAR" -c "$CJAR" "$1" | grep -oP 'name="csrf" value="\K[^"]+' | head -1
+  local j="${2:-$CJAR}"
+  curl -s -b "$j" -c "$j" "$1" | grep -oP 'name="csrf" value="\K[^"]+' | head -1
 }
 
 CSRF="$(get_csrf "$BASE/login")"
@@ -125,5 +126,60 @@ curl -s -o /dev/null -b "$CJAR" -c "$CJAR" \
   --data "csrf=$CSRF&current_password=pass_admin_security7777&new_password=short" "$BASE/settings/password"
 body=$(curl -s -b "$CJAR" -c "$CJAR" "$BASE/settings")
 grep -q 'New password must be at least 10 characters.' <<< "$body" || fail "short new password not flagged"
+
+# --- Create a test user via settings ---
+UNAME="user_$(date +%s)"
+CSRF=$(get_csrf "$BASE/settings")
+curl -s -o /dev/null -b "$CJAR" -c "$CJAR" \
+  --data "csrf=$CSRF&username=$UNAME&password=userpass12345&email=$UNAME@example.com" \
+  "$BASE/settings/users/add"
+USER_ID=$(mysql -u userauth -ppassuserauth77 -N -e "USE authnamedb; SELECT id FROM users WHERE username='$UNAME'" 2>/dev/null)
+[ -n "$USER_ID" ] || fail "test user not created"
+
+# --- Create a rule ---
+CSRF=$(get_csrf "$BASE/settings")
+curl -s -o /dev/null -b "$CJAR" -c "$CJAR" \
+  --data "csrf=$CSRF&dummy_path=/test-dummy&real_path=/test-real&user_id=$USER_ID" \
+  "$BASE/settings/rules/add"
+RULE_ID=$(mysql -u userauth -ppassuserauth77 -N -e "USE authnamedb; SELECT id FROM url_rules WHERE dummy_path='/test-dummy'" 2>/dev/null)
+[ -n "$RULE_ID" ] || fail "rule not created"
+
+# --- Direct real path is blocked even with admin session ---
+status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" "$BASE/test-real")
+[ "$status" = "403" ] || fail "direct real path should be 403 (got $status)"
+
+# --- Gate flow as a fresh visitor ---
+GJAR="$(mktemp)"
+trap 'kill $SRV_PID 2>/dev/null; rm -f "$CJAR" "$GJAR"' EXIT
+CSRF=$(get_csrf "$BASE/test-dummy" "$GJAR")
+[ -n "$CSRF" ] || fail "gate page missing"
+curl -s -o /dev/null -b "$GJAR" -c "$GJAR" --data "csrf=$CSRF&action=send" "$BASE/test-dummy"
+USER_CODE=$(grep -oP 'verification code is: \K[A-Za-z0-9]{8}' "$MAIL_LOG" | tail -1)
+[ -n "$USER_CODE" ] || fail "user code not emailed"
+curl -s -D /tmp/hdr3 -o /dev/null -b "$GJAR" -c "$GJAR" \
+  --data "csrf=$CSRF&action=verify&code=$USER_CODE" "$BASE/test-dummy"
+loc=$(grep -i '^location:' /tmp/hdr3 | tr -d '\r' | cut -d' ' -f2 || true)
+[ "$loc" = "/test-real" ] || fail "verify should redirect to /test-real (got $loc)"
+status=$(curl -s -o /dev/null -w '%{http_code}' -b "$GJAR" -c "$GJAR" "$BASE/test-real")
+[ "$status" = "200" ] || fail "gated real path should be 200 (got $status)"
+
+# --- Wrong-code lockout (5 attempts) ---
+GJAR2="$(mktemp)"
+trap 'kill $SRV_PID 2>/dev/null; rm -f "$CJAR" "$GJAR" "$GJAR2"' EXIT
+CSRF=$(get_csrf "$BASE/test-dummy" "$GJAR2")
+curl -s -o /dev/null -b "$GJAR2" -c "$GJAR2" --data "csrf=$CSRF&action=send" "$BASE/test-dummy"
+CODE2=$(grep -oP 'verification code is: \K[A-Za-z0-9]{8}' "$MAIL_LOG" | tail -1)
+for i in 1 2 3 4 5; do
+  curl -s -o /dev/null -b "$GJAR2" -c "$GJAR2" \
+    --data "csrf=$CSRF&action=verify&code=WRONGCODE" "$BASE/test-dummy"
+done
+status=$(curl -s -o /dev/null -w '%{http_code}' -b "$GJAR2" -c "$GJAR2" \
+  --data "csrf=$CSRF&action=verify&code=$CODE2" "$BASE/test-dummy")
+[ "$status" = "200" ] || fail "lockout verify should stay on gate (got $status)"
+status=$(curl -s -o /dev/null -w '%{http_code}' -b "$GJAR2" -c "$GJAR2" "$BASE/test-real")
+[ "$status" = "403" ] || fail "real path should be 403 after lockout (got $status)"
+
+# --- Cleanup test data ---
+mysql -u userauth -ppassuserauth77 -e "USE authnamedb; DELETE FROM users WHERE id=$USER_ID" 2>/dev/null || true
 
 echo "ALL INTEGRATION TESTS PASSED"
