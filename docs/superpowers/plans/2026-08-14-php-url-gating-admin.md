@@ -1173,7 +1173,8 @@ sleep 1
 fail() { echo "FAIL: $1"; exit 1; }
 
 get_csrf() {
-  curl -s -b "$CJAR" -c "$CJAR" "$1" | grep -oP 'name="csrf" value="\K[^"]+' | head -1
+  local j="${2:-$CJAR}"
+  curl -s -b "$j" -c "$j" "$1" | grep -oP 'name="csrf" value="\K[^"]+' | head -1
 }
 
 CSRF="$(get_csrf "$BASE/login")"
@@ -1511,8 +1512,10 @@ function handle_gate(array $rule): void
         } elseif ($action === 'verify') {
             $input = trim((string) ($_POST['code'] ?? ''));
             if (!preg_match('/^[A-Za-z0-9]{8}$/', $input)) {
+                verify_code($pdo, 'user', null, (int) $rule['associated_user_id'], $ruleId, $input);
                 $errors[] = 'Code must be exactly 8 alphanumeric characters.';
             } elseif (verify_code($pdo, 'user', null, (int) $rule['associated_user_id'], $ruleId, $input)) {
+                session_regenerate_id(true);
                 gate_issue($ruleId);
                 redirect($rule['real_path']);
             } else {
@@ -1556,7 +1559,7 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -b "$CJAR" -c "$CJAR" "$BASE/tes
 # --- Gate flow as a fresh visitor ---
 GJAR="$(mktemp)"
 trap 'kill $SRV_PID 2>/dev/null; rm -f "$CJAR" "$GJAR"' EXIT
-CSRF=$(get_csrf "$BASE/test-dummy")
+CSRF=$(get_csrf "$BASE/test-dummy" "$GJAR")
 [ -n "$CSRF" ] || fail "gate page missing"
 curl -s -o /dev/null -b "$GJAR" -c "$GJAR" --data "csrf=$CSRF&action=send" "$BASE/test-dummy"
 USER_CODE=$(grep -oP 'verification code is: \K[A-Za-z0-9]{8}' "$MAIL_LOG" | tail -1)
@@ -1571,7 +1574,7 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -b "$GJAR" -c "$GJAR" "$BASE/tes
 # --- Wrong-code lockout (5 attempts) ---
 GJAR2="$(mktemp)"
 trap 'kill $SRV_PID 2>/dev/null; rm -f "$CJAR" "$GJAR" "$GJAR2"' EXIT
-CSRF=$(get_csrf "$BASE/test-dummy")
+CSRF=$(get_csrf "$BASE/test-dummy" "$GJAR2")
 curl -s -o /dev/null -b "$GJAR2" -c "$GJAR2" --data "csrf=$CSRF&action=send" "$BASE/test-dummy"
 CODE2=$(grep -oP 'verification code is: \K[A-Za-z0-9]{8}' "$MAIL_LOG" | tail -1)
 for i in 1 2 3 4 5; do
