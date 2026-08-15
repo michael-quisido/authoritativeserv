@@ -4,7 +4,7 @@
 
 **Goal:** Replace the PHP admin app (`php/`) with a Next.js 16 (App Router) implementation: admin login (password + emailed 8-char code), a settings dashboard (users + dummy→real URL rules CRUD), and URL gating where a dummy path emails a code that grants a 10-minute server-side gate to a real path.
 
-**Architecture:** Server Actions + Server Components (no client-fetch API layer). DB-backed sessions (a `sessions` MySQL table; client holds a random httpOnly `kmcq_sess` cookie, server stores its SHA-256 hash + JSON data). A catch-all route (`app/[...slug]/page.tsx`) resolves arbitrary admin-configured dummy/real paths (real-first, like PHP). Auth library logic is ported 1:1 from `php/lib/auth.php` / `php/lib/guard.php` (constant-time compares, atomic one-time code claim, atomic rate-limit inserts). This is Next.js 16.2.7 — `cookies()` is async, middleware is `proxy.ts` (unused here), Server Actions must re-verify auth+CSRF on every call.
+**Architecture:** Server Actions + Server Components (no client-fetch API layer). DB-backed sessions (a `sessions` MySQL table; client holds a random httpOnly `kmcq_sess` cookie, server stores its SHA-256 hash + JSON data). A catch-all route (`app/[...slug]/page.tsx`) resolves arbitrary admin-configured dummy/real paths (real-first, like PHP). Auth library logic is ported 1:1 from `php/lib/auth.php` / `php/lib/guard.php` (constant-time compares, atomic one-time code claim, atomic rate-limit inserts). This is Next.js 16.2.7 — `cookies()` is async, `middleware` is renamed `proxy.ts` (used ONLY to generate a per-request CSP nonce, never for auth — the docs forbid auth in Proxy), Server Actions must re-verify auth+CSRF on every call. Next.js App Router ships its RSC payload as inline scripts, so a static `default-src 'self'` CSP would block hydration and break every `useActionState` form; the strict CSP is therefore nonce-based.
 
 **Tech Stack:** Next.js 16.2.7 (App Router, `nodejs` runtime), React 19, TypeScript (strict), mysql2/promise, bcryptjs (verifies the PHP `$2y$` seed hash), nodemailer, Tailwind v4, Vitest (unit), Playwright (E2E).
 
@@ -27,6 +27,7 @@
 
 **Created:**
 - `.env.example` — documented env overrides (committed)
+- `proxy.ts` — per-request CSP nonce generator (root, next to `app/`)
 - `migrations/001_sessions.sql` — `sessions` table
 - `scripts/migrate.mjs` — applies `migrations/*.sql` (Node ESM)
 - `vitest.config.ts`, `playwright.config.ts`
@@ -52,21 +53,22 @@
 - `tests/e2e/global-setup.ts`, `tests/e2e/reset-db.ts`, `tests/e2e/helpers.ts`, `tests/e2e/login.spec.ts`, `tests/e2e/settings.spec.ts`, `tests/e2e/gate.spec.ts`
 
 **Modified:**
-- `next.config.ts` — `serverExternalPackages: ['mysql2']`, `experimental.authInterrupts: true`, security headers
+- `next.config.ts` — `serverExternalPackages: ['mysql2']`, `experimental.authInterrupts: true`, security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`; CSP is nonce-based in `proxy.ts`, NOT a static header)
 - `package.json` — deps + `migrate`, `test:unit`, `test:e2e` scripts
 - `.gitignore` — `!.env.example`, `/storage/`, `/test-results/`, `/playwright-report/`
 - `lib/db.ts` — env-driven pool
 - `app/layout.tsx` — (verify it renders `children`; no change expected)
+- `app/page.tsx` — add `await connection()` (from `next/server`) so the landing page renders dynamically; nonce-based CSP requires every page to be dynamically rendered (static pages get no nonce and their inline scripts would be blocked). Page content stays identical.
 
-**Untouched:** `app/page.tsx` (landing page), `php/` (retires at cutover).
+**Untouched:** `php/` (retires at cutover).
 
 ---
 
 ## Task 1: Foundation & config
 
 **Files:**
-- Modify: `package.json`, `next.config.ts`, `.gitignore`, `lib/db.ts`
-- Create: `.env.example`, `migrations/001_sessions.sql`, `scripts/migrate.mjs`, `vitest.config.ts`, `playwright.config.ts`
+- Modify: `package.json`, `next.config.ts`, `.gitignore`, `lib/db.ts`, `app/page.tsx` (add `await connection()` only)
+- Create: `proxy.ts`, `.env.example`, `migrations/001_sessions.sql`, `scripts/migrate.mjs`, `vitest.config.ts`, `playwright.config.ts`
 
 - [ ] **Step 1: Install dependencies**
 
@@ -88,7 +90,6 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "no-referrer" },
-  { key: "Content-Security-Policy", value: "default-src 'self'" },
 ];
 
 const nextConfig: NextConfig = {
@@ -103,6 +104,73 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 ```
+The CSP is NOT a static header here — it is nonce-based and set in `proxy.ts` (next step). A static `default-src 'self'` would block Next.js's inline RSC payload scripts and break all client-side forms.
+
+- [ ] **Step 2b: Create `proxy.ts` (nonce-based strict CSP)**
+
+Create `proxy.ts` in the repo root (same level as `app/`):
+```ts
+import crypto from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+
+export function proxy(request: NextRequest) {
+  const nonce = crypto.randomBytes(32).toString("base64");
+  const isDev = process.env.NODE_ENV === "development";
+  const csp = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `style-src 'self' 'nonce-${nonce}'`,
+    "img-src 'self' blob: data:",
+    "font-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
+}
+
+export const config = {
+  matcher: [
+    {
+      source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
+  ],
+};
+```
+Notes:
+- `crypto.randomUUID()` is used in the official docs, but `node:crypto`'s `randomBytes` gives the same 32-byte base64 nonce deterministically; either is fine.
+- `'unsafe-eval'` is required only in development (React uses `eval` for enhanced error stacks); production omits it.
+- The matcher skips static assets and prefetch requests (they don't need the CSP header).
+
+- [ ] **Step 2c: Force dynamic rendering on the landing page**
+
+Nonce-based CSP requires **every** page to be dynamically rendered (docs: "To use a nonce, your page must be dynamically rendered"). The landing page is currently static, so its build-time inline scripts would carry no nonce and be blocked. Edit `app/page.tsx` — replace:
+```tsx
+import Image from "next/image";
+
+export default function Home() {
+```
+with:
+```tsx
+import Image from "next/image";
+import { connection } from "next/server";
+
+export default async function Home() {
+  await connection();
+```
+Keep the rest of the component body identical. `await connection()` suspends until the incoming request is available, forcing dynamic rendering on this page.
 
 - [ ] **Step 3: Update `.gitignore` and create `.env.example`**
 
@@ -243,13 +311,13 @@ export default defineConfig({
 - [ ] **Step 7: Verify foundation**
 
 Run: `npm run lint && npm run build`
-Expected: lint clean; build succeeds (existing landing page builds with the new config).
+Expected: lint clean; build succeeds (existing landing page builds with the new config, now as a dynamic route). CSP correctness is verified later by the E2E specs (they fail if the nonce CSP blocks Next.js inline scripts).
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add next.config.ts .gitignore .env.example migrations scripts vitest.config.ts playwright.config.ts package.json package-lock.json
-git commit -m "chore(next): foundation config, deps, sessions migration, test runners"
+git add next.config.ts proxy.ts app/page.tsx .gitignore .env.example migrations scripts vitest.config.ts playwright.config.ts package.json package-lock.json
+git commit -m "chore(next): foundation config, nonce CSP proxy, dynamic landing, deps, sessions migration, test runners"
 ```
 
 ---
@@ -2514,7 +2582,7 @@ All values default in `lib/config.ts`; override via env vars (see `.env.example`
 ## Security notes
 - Codes: 8 alphanumeric, HMAC-SHA256 hashed in DB, one-time, 10-min expiry, 5-attempt limit, 3-send/10-min rate limit (atomic inserts).
 - Passwords: bcrypt (bcryptjs, cost 12, verifies the PHP `$2y$` seed). Sessions: DB-backed, `kmcq_sess` cookie httpOnly + SameSite=Strict.
-- CSRF: origin check + per-session token on every Server Action; PDO-style prepared statements; security headers set in `next.config.ts`.
+- CSRF: origin check + per-session token on every Server Action; PDO-style prepared statements; security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`) in `next.config.ts` plus a nonce-based strict CSP generated per-request in `proxy.ts`.
 
 ## Tests
 - Unit: `npm run test:unit` (requires a running MySQL with migrations applied)
@@ -2558,7 +2626,7 @@ git commit -m "docs(next): add README and final verification"
 - §4.4 gate flow (real-first dispatch, malformed-counts-attempt, mail-failure rate-limit rollback, session regen) → Task 9
 - §5 auth flows (login/code/resend/logout, session regeneration, 24h idle / 7d absolute) → Tasks 4, 7
 - §6 settings dashboard (users, rules, password; case-insensitive reserved paths; cross-rule collision) → Task 8
-- §7 security (httpOnly/SameSite/Secure, origin+token CSRF, constant-time, atomic claims, headers, env-only secrets) → Tasks 1, 3, 4, 6
+- §7 security (httpOnly/SameSite/Secure, origin+token CSRF, constant-time, atomic claims, nonce CSP + headers, env-only secrets) → Tasks 1, 3, 4, 6
 - §8 data model (`sessions` migration; bcryptjs for `$2y$`) → Tasks 1, 3
 - §9 testing (Vitest units, Playwright E2E, migrate script, reset) → Tasks 2–9, Task 10
 - §10 deployment (README, env vars, migrate, build/start, SESSION_SECURE/MAIL_MODE) → Task 10

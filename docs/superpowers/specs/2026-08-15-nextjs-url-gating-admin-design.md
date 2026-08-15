@@ -22,7 +22,7 @@ Replace the plain-PHP admin app (`php/`) with a Next.js 16 (App Router) implemen
 
 - Next.js **16.2.7** — this is NOT the Next.js of older training data:
   - `cookies()` from `next/headers` is **async**.
-  - Middleware is renamed **Proxy** (`proxy.ts`), cannot set runtime, and the docs forbid using it for session/auth — we use none.
+  - Middleware is renamed **Proxy** (`proxy.ts`), cannot set runtime, and the docs forbid using it for session/auth — we use it only to generate a CSP nonce per request (never for auth).
   - Route segment config: `dynamic`, `revalidate`, `fetchCache` are removed; `runtime` defaults to `nodejs`.
   - Cache Components are OFF (empty `next.config.ts`); `fetch` is not cached by default.
   - Jest/Vitest cannot test async Server Components — use Playwright for flows.
@@ -115,7 +115,7 @@ After each mutation: `revalidatePath('/settings')`. Settings page is session-dep
 - Prepared statements everywhere; React default output escaping (no `dangerouslySetInnerHTML`).
 - Constant-time code comparisons (`crypto.timingSafeEqual`); dummy-hash compare on missing admin.
 - Atomic claim + rate-limit inserts (row-count verified), fail-closed.
-- Security headers in `next.config.ts`: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, CSP `default-src 'self'`.
+- Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` set in `next.config.ts`; strict CSP via per-request nonce generated in `proxy.ts` (`script-src 'self' 'nonce-…' 'strict-dynamic'`, plus `'unsafe-eval'` in dev only; `style-src 'self' 'nonce-…'`). Next.js App Router needs inline scripts for the RSC payload, so a static `default-src 'self'` would break hydration — nonce keeps the policy strict.
 - Secrets only in server env: `.env.local` (gitignored) + committed `.env.example`. `NEXT_PUBLIC_` is never used for secrets. `serverExternalPackages: ['mysql2']`.
 
 ## 8. Data model changes
