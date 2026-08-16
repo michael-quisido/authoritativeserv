@@ -150,6 +150,11 @@ bcrypt compatibility: the seeded admin hash uses PHP `$2y$` prefix which Node's 
 - Settings: add/delete user; add/delete rule; reserved-path rejection; wrong current password; short new password.
 - Gate: direct real path → 403; fresh visitor send → read code from `storage/mail.log` → verify → real path 200; 5-wrong-attempt lockout; cleanup.
 
+### E2E learnings (Task 7, apply to later specs)
+- Next dev server treats `127.0.0.1` as cross-origin; without hydration, native form POSTs carry `Origin: null` (amplified by `Referrer-Policy: no-referrer`) and server actions abort. Fix (already in `next.config.ts`): `allowedDevOrigins: ["127.0.0.1"]` — dev-only, does not affect prod.
+- Next.js inserts a route-announcer `<div id="__next-route-announcer__">` whose text duplicates the page heading. Assertions like `getByText("Settings Dashboard")` then hit Playwright strict-mode violations (2 matches). Use `getByRole("heading", { name: ... })` for any text that is also a page `<h1>`.
+- The settings E2E (Task 8) must reuse the same heading-role pattern and `loginAsAdmin` helper; note `loginAsAdmin` ends on `/settings`, so it depends on `/settings` existing (bridging minimal page landed in Task 7, expanded in Task 8).
+
 ### Scripts
 - `npm run migrate` — apply `migrations/001_sessions.sql`.
 - E2E pre-test reset wipes `sessions`, `users`, `url_rules`, `verification_codes`, `email_rate_limits`.
