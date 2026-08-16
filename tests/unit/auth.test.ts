@@ -77,6 +77,14 @@ describe("verify_code flow", () => {
     }
     expect(await verifyCode({ type: "user", adminId: null, userId, ruleId: null }, code)).toBe(false);
   });
+  it("counts malformed input as an attempt (lockout unbypassable)", async () => {
+    const code = await issueCode({ type: "user", adminId: null, userId, ruleId: null });
+    expect(codeFormatOk("short")).toBe(false);
+    for (let i = 0; i < 5; i++) {
+      expect(await verifyCode({ type: "user", adminId: null, userId, ruleId: null }, "short")).toBe(false);
+    }
+    expect(await verifyCode({ type: "user", adminId: null, userId, ruleId: null }, code)).toBe(false);
+  });
   it("returns false when no code exists for the scope", async () => {
     expect(
       await verifyCode({ type: "user", adminId: null, userId: 999999999, ruleId: null }, "ABCDEFGH")
