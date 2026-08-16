@@ -7,7 +7,7 @@ test.beforeEach(async () => {
 
 test("login: wrong password stays on login, correct password verifies to settings", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByText("Admin Login")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Admin Login" })).toBeVisible();
 
   await page.getByLabel("Username").fill("admin_security");
   await page.getByLabel("Password").fill("wrongpass");
@@ -23,7 +23,7 @@ test("login: wrong password stays on login, correct password verifies to setting
   await page.getByLabel("Code").fill(code);
   await page.getByRole("button", { name: "Verify" }).click();
   await expect(page).toHaveURL(/\/settings/);
-  await expect(page.getByText("Settings Dashboard")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Settings Dashboard" })).toBeVisible();
 });
 
 test("logout returns to login", async ({ page }) => {
