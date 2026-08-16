@@ -20,6 +20,14 @@ describe("normalizePath", () => {
   it("rejects the root", () => {
     expect(normalizePath("/")).toBeNull();
   });
+  it("rejects protocol-relative paths (open-redirect guard)", () => {
+    expect(normalizePath("//evil.com")).toBeNull();
+    expect(normalizePath(" //evil.com/foo ")).toBeNull();
+  });
+  it("rejects scheme-full paths (open-redirect guard)", () => {
+    expect(normalizePath("https://evil.com")).toBeNull();
+    expect(normalizePath("javascript:alert(1)")).toBeNull();
+  });
 });
 
 describe("collidesWithAppRoutes", () => {

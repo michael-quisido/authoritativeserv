@@ -62,7 +62,7 @@ Server actions live in `app/actions.ts` (or `app/actions/*.ts`); each mutation i
 ### 4.4 Gate flow (catch-all)
 `app/[...slug]/page.tsx` (Server Component):
 1. Build path from `params.slug` (join with `/`, leading slash, trim trailing slash).
-2. Look up `url_rules` by `dummy_path` first, then `real_path`. No match → `notFound()` (404).
+2. Look up `url_rules` by `real_path` first (real paths take precedence, matching PHP `routes.php`), then `dummy_path`. No match → `notFound()` (404). `real_path`/`dummy_path` are cross-column unique via `rulePathCollisions`, so a path can never be both.
 3. **Dummy path** → render gate page + forms; actions:
    - `gateSendCode(ruleId)` — rate-limited per rule (`rule:<id>` scope, 3/10-min, shared across visitors); issues fresh code to the rule's assigned user and emails it; on mail failure show error and do **not** burn the rate-limit slot. Known limitation (inherited from PHP `try_record_rate_limit`, recorded per Task 4 review): the guard `SELECT COUNT(*)` is a snapshot read, so under REPEATABLE READ two concurrent requests can both pass the count and over-admit past `max`. Fail-closed only on thrown errors. Accepted for now; a locking read (`FOR UPDATE`) or `GET_LOCK` would close it in a follow-up.
    - `gateVerify(ruleId, code)` — regex `^[A-Za-z0-9]{8}$`; malformed input counts an attempt (calls the verifier anyway so lockout is unbypassable); HMAC compare; ≤5 attempts; one-time claim; on success regenerate session id, store `{ [ruleId]: expiresAt }` in session `data`, redirect to the rule's real path.
@@ -167,6 +167,13 @@ bcrypt compatibility: the seeded admin hash uses PHP `$2y$` prefix which Node's 
 - **E2E username-delete assertion is ordering-dependent** (settings.spec:37-38): the `tr hasText: uname` resolves to one row only because the rule row was deleted first. Keep that ordering; add a comment-free guard (e.g. `.first()`) only if it ever flakes.
 - **Overlong inputs** (username>64, email/path>255) surface as raw MySQL error 1406 via server actions (PHP parity). Hardening follow-up: length validation in the actions.
 - **percent-encoding/dot-segment reserved-path bypass** in `collidesWithAppRoutes` is not exploitable (PHP exact-string routing; all admin routes session-gated) — defense-in-depth only, no action needed.
+
+### Task 9 review follow-ups (tracked, not blockers) + applied hardening
+- **Gate open-redirect vector — FIXED in this session:** `normalizePath` now rejects protocol-relative (`//evil.com`) and scheme-full (`https://…`) inputs → `null`, so a rule can no longer point `real_path` (or `dummy_path`) at an external host and post-gate `redirect(rule.real_path)` becomes a same-origin redirect. Added unit tests (15 in `rules.test.ts`). Deviation from plan code, approved via review.
+- **Gate CSRF binding — FIXED in this session:** `gateSendCode` now mints + persists a session CSRF token when absent (mirrors the `login` action). First anonymous POST still relies on `verifyOrigin()` (no token exists yet); every subsequent gate action is token-checked. Deviation from plan code, approved via review.
+- **Dummy-path re-render of gate form** for an already-gated visitor (no auto-redirect to real path) is PHP parity (PHP always renders the form on GET) — UX nit, no action.
+- **`session.adminId` column is nulled on gate grant** (`updateSessionData` passes no adminId) — no current code reads that column for auth (JSON `admin_verified` drives the guard); latent trap only.
+- **Gate E2E blind spots** (expired gate, admin-no-bypass, mail-failure rollback, cross-visitor rate-limit sharing) untested — plan-mandated scope, acceptable; a future spec could close them.
 
 ### Scripts
 - `npm run migrate` — apply `migrations/001_sessions.sql`.

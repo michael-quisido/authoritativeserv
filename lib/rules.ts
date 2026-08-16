@@ -9,6 +9,7 @@ export const RESERVED_PATHS = [
 export function normalizePath(raw: string): string | null {
   const t = raw.trim();
   if (t === "" || t === "/") return null;
+  if (t.startsWith("//") || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t)) return null;
   const withSlash = t.startsWith("/") ? t : `/${t}`;
   const out = withSlash.replace(/\/+$/, "");
   return out === "" ? null : out;

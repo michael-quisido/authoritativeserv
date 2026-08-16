@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { ensureSession, setSessionCookie } from "@/lib/session-cookie";
-import { verifyCsrfToken, verifyOrigin } from "@/lib/csrf";
+import { verifyCsrfToken, newCsrfToken, verifyOrigin } from "@/lib/csrf";
 import { codeFormatOk, issueCode, verifyCode } from "@/lib/auth";
 import { deleteRateLimitRecord, tryRecordRateLimit } from "@/lib/rate-limit";
 import { getRuleById, getUserEmail } from "@/lib/repo";
@@ -22,6 +22,8 @@ export async function gateSendCode(_prev: GateState, formData: FormData): Promis
   if (session.data.csrf && !verifyCsrfToken(session.data, formData.get("csrf"))) {
     return { errors: ["Invalid session."] };
   }
+  const data = { ...session.data, csrf: session.data.csrf ?? newCsrfToken() };
+  if (data.csrf !== session.data.csrf) await updateSessionData(session.id, data);
   const ruleId = Number(formData.get("rule_id"));
   const rule = await getRuleById(ruleId);
   if (!rule) return { errors: ["Unknown rule."] };
