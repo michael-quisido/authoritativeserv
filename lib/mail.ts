@@ -8,7 +8,8 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
     try {
       const dir = path.dirname(config.mail.logFile);
       fs.mkdirSync(dir, { recursive: true });
-      const line = `[${new Date().toISOString()}] TO=${to} SUBJECT=${subject} BODY=${body.replace(/\n/g, "\\n")}\n`;
+      const esc = (s: string) => s.replace(/[\n\r]/g, " ");
+      const line = `[${new Date().toISOString()}] TO=${esc(to)} SUBJECT=${esc(subject)} BODY=${body.replace(/\n/g, "\\n")}\n`;
       fs.appendFileSync(config.mail.logFile, line, { flag: "a" });
       return true;
     } catch {

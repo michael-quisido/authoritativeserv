@@ -57,10 +57,9 @@ Server actions live in `app/actions.ts` (or `app/actions/*.ts`); each mutation i
 - `lib/session.ts` — DB-backed session helpers: create/read/update/delete rows, token gen + SHA-256 hashing, idle/absolute expiry (24h idle, 7d absolute), lazy pruning, session id regeneration (new token, same data).
 - `lib/guard.ts` — port of `php/lib/guard.php`: gate set/read in session `data`, per-rule keying, 10-min expiry pruned on read.
 - `lib/rate-limit.ts` — port of the atomic `try_rate_limit()`: guarded `INSERT ... SELECT` window count for scope, fail-closed on DB contention (PDOException 1467 equivalent).
-- `lib/mail.ts` — nodemailer SMTP (same Gmail host/port/auth/from as PHP config) with `MAIL_MODE=log` fallback writing to `MAIL_LOG_FILE`; returns boolean success (callers must honor it — see §4.4 gate send).
+- `lib/mail.ts` — nodemailer SMTP (same Gmail host/port/auth/from as PHP config) with `MAIL_MODE=log` fallback writing to `MAIL_LOG_FILE`; returns boolean success (callers must honor it — see §4.4 gate send). Deviation from plan (per Task 5 review): log-mode lines escape `TO`/`SUBJECT` (newlines → spaces) since `to` is user-controlled in the gate flow; `BODY` still escapes `\n`.
 
 ### 4.4 Gate flow (catch-all)
-
 `app/[...slug]/page.tsx` (Server Component):
 1. Build path from `params.slug` (join with `/`, leading slash, trim trailing slash).
 2. Look up `url_rules` by `dummy_path` first, then `real_path`. No match → `notFound()` (404).
