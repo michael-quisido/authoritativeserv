@@ -151,9 +151,16 @@ bcrypt compatibility: the seeded admin hash uses PHP `$2y$` prefix which Node's 
 - Gate: direct real path → 403; fresh visitor send → read code from `storage/mail.log` → verify → real path 200; 5-wrong-attempt lockout; cleanup.
 
 ### E2E learnings (Task 7, apply to later specs)
+
 - Next dev server treats `127.0.0.1` as cross-origin; without hydration, native form POSTs carry `Origin: null` (amplified by `Referrer-Policy: no-referrer`) and server actions abort. Fix (already in `next.config.ts`): `allowedDevOrigins: ["127.0.0.1"]` — dev-only, does not affect prod.
 - Next.js inserts a route-announcer `<div id="__next-route-announcer__">` whose text duplicates the page heading. Assertions like `getByText("Settings Dashboard")` then hit Playwright strict-mode violations (2 matches). Use `getByRole("heading", { name: ... })` for any text that is also a page `<h1>`.
 - The settings E2E (Task 8) must reuse the same heading-role pattern and `loginAsAdmin` helper; note `loginAsAdmin` ends on `/settings`, so it depends on `/settings` existing (bridging minimal page landed in Task 7, expanded in Task 8).
+
+### Task 7 review follow-ups (tracked, not blockers)
+- **Login-attempt brute-force protection is absent by design** (PHP parity): the `admin:<id>` rate limit only gates code *issuance*, not password guesses. Mitigated by bcrypt cost-12 (~100ms/attempt) + 8-char email code (factor 2). Candidate hardening follow-up: a per-admin login-attempt lockout. Do not silently add it mid-migration.
+- **Bridging `/settings` is reachable unauthenticated until Task 8 gates it** (`requireAdminVerified`). Interim content is static (heading + logout) — no data leak — but Task 8 MUST add the auth guard before the dashboard ships.
+- **Email-send failure is unchecked in login/resend** (PHP parity): user reaches the code page with no code delivered; `resend` is the recovery path.
+- **`verifyOrigin` compares Origin host to the raw `Host` header** (csrf.ts:24-25): behind a proxy that rewrites `Host`, legit logins could be rejected — deployment note (see §10 reverse proxy).
 
 ### Scripts
 - `npm run migrate` — apply `migrations/001_sessions.sql`.
