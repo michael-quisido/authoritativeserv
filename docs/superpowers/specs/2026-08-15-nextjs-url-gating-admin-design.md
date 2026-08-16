@@ -65,7 +65,7 @@ Server actions live in `app/actions.ts` (or `app/actions/*.ts`); each mutation i
 1. Build path from `params.slug` (join with `/`, leading slash, trim trailing slash).
 2. Look up `url_rules` by `dummy_path` first, then `real_path`. No match → `notFound()` (404).
 3. **Dummy path** → render gate page + forms; actions:
-   - `gateSendCode(ruleId)` — rate-limited per rule (`rule:<id>` scope, 3/10-min, shared across visitors); issues fresh code to the rule's assigned user and emails it; on mail failure show error and do **not** burn the rate-limit slot.
+   - `gateSendCode(ruleId)` — rate-limited per rule (`rule:<id>` scope, 3/10-min, shared across visitors); issues fresh code to the rule's assigned user and emails it; on mail failure show error and do **not** burn the rate-limit slot. Known limitation (inherited from PHP `try_record_rate_limit`, recorded per Task 4 review): the guard `SELECT COUNT(*)` is a snapshot read, so under REPEATABLE READ two concurrent requests can both pass the count and over-admit past `max`. Fail-closed only on thrown errors. Accepted for now; a locking read (`FOR UPDATE`) or `GET_LOCK` would close it in a follow-up.
    - `gateVerify(ruleId, code)` — regex `^[A-Za-z0-9]{8}$`; malformed input counts an attempt (calls the verifier anyway so lockout is unbypassable); HMAC compare; ≤5 attempts; one-time claim; on success regenerate session id, store `{ [ruleId]: expiresAt }` in session `data`, redirect to the rule's real path.
 4. **Real path** → read session; if a valid, unexpired gate exists for this rule → render `real.tsx` (content page). Otherwise return **403**. Admin session does not bypass (gate is per-rule, like PHP).
 
