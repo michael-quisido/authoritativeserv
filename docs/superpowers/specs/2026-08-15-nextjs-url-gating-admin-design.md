@@ -162,6 +162,12 @@ bcrypt compatibility: the seeded admin hash uses PHP `$2y$` prefix which Node's 
 - **Email-send failure is unchecked in login/resend** (PHP parity): user reaches the code page with no code delivered; `resend` is the recovery path.
 - **`verifyOrigin` compares Origin host to the raw `Host` header** (csrf.ts:24-25): behind a proxy that rewrites `Host`, legit logins could be rejected — deployment note (see §10 reverse proxy).
 
+### Task 8 review follow-ups (tracked, not blockers)
+- **bcrypt unit-test timeout flake:** `tests/unit/auth.test.ts` "hash/verify roundtrips" (~4.1s on this CPU) occasionally exceeds vitest's 5s default when the full suite runs under load → 38/39. Pre-existing (file untouched since Task 3). If it recurs: raise the suite timeout (e.g. `testTimeout: 15_000` in vitest.config.ts) or split the test.
+- **E2E username-delete assertion is ordering-dependent** (settings.spec:37-38): the `tr hasText: uname` resolves to one row only because the rule row was deleted first. Keep that ordering; add a comment-free guard (e.g. `.first()`) only if it ever flakes.
+- **Overlong inputs** (username>64, email/path>255) surface as raw MySQL error 1406 via server actions (PHP parity). Hardening follow-up: length validation in the actions.
+- **percent-encoding/dot-segment reserved-path bypass** in `collidesWithAppRoutes` is not exploitable (PHP exact-string routing; all admin routes session-gated) — defense-in-depth only, no action needed.
+
 ### Scripts
 - `npm run migrate` — apply `migrations/001_sessions.sql`.
 - E2E pre-test reset wipes `sessions`, `users`, `url_rules`, `verification_codes`, `email_rate_limits`.
