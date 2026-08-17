@@ -22,6 +22,10 @@ export const config = {
     idleSeconds: 24 * 60 * 60,
     absoluteSeconds: 7 * 24 * 60 * 60,
   },
+  allowedIps: (process.env.ALLOWED_IPS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
   mail: {
     mode: (process.env.MAIL_MODE ?? "log") as "smtp" | "log",
     from: process.env.MAIL_FROM ?? "no-reply@kmcq-gmbh.com",

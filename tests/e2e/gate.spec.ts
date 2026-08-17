@@ -30,7 +30,7 @@ test("gate: send code then verify grants the real path", async ({ page, browser 
   const vp = await visitor.newPage();
 
   await vp.goto(real);
-  await expect(vp.getByRole("heading", { name: "403 Forbidden" })).toBeVisible();
+  await expect(vp.getByText("Access restricted. Please contact the administrator.")).toBeVisible();
 
   await vp.goto(dummy);
   await expect(vp.getByRole("heading", { name: "Restricted Area" })).toBeVisible();
@@ -67,7 +67,7 @@ test("gate: five wrong codes lock the rule out", async ({ page, browser }) => {
   await expect(vp.getByText("Invalid or expired code.")).toBeVisible();
 
   await vp.goto(real);
-  await expect(vp.getByRole("heading", { name: "403 Forbidden" })).toBeVisible();
+  await expect(vp.getByText("Access restricted. Please contact the administrator.")).toBeVisible();
 
   await visitor.close();
 });

@@ -1,7 +1,41 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { config as appConfig } from "@/lib/config";
+import { getRuleByRealPath } from "@/lib/repo";
+import { getSessionByToken } from "@/lib/session";
+import { gateValid } from "@/lib/guard";
 
-export function proxy(request: NextRequest) {
+function raw403(body: string) {
+  return new NextResponse(body, {
+    status: 403,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
+
+function clientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "";
+}
+
+export async function proxy(request: NextRequest) {
+  if (process.env.NODE_ENV === "production" && appConfig.allowedIps.length > 0) {
+    const ip = clientIp(request);
+    if (!appConfig.allowedIps.includes(ip)) {
+      return raw403("IP not authorized");
+    }
+  }
+
+  const path = new URL(request.url).pathname;
+  const rule = await getRuleByRealPath(path);
+  if (rule) {
+    const token = request.cookies.get(appConfig.session.cookieName)?.value;
+    const session = token ? await getSessionByToken(token) : null;
+    if (!gateValid(session?.data, rule.id)) {
+      return raw403("Access restricted. Please contact the administrator.");
+    }
+  }
+
   const nonce = crypto.randomBytes(32).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
   const csp = [
