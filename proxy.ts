@@ -21,7 +21,8 @@ function clientIp(req: NextRequest): string {
 export async function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === "production" && appConfig.allowedIps.length > 0) {
     const ip = clientIp(request);
-    if (!appConfig.allowedIps.includes(ip)) {
+    const isLocal = ip === "127.0.0.1" || ip === "::1" || ip === "";
+    if (!isLocal && !appConfig.allowedIps.includes(ip)) {
       return raw403("IP not authorized");
     }
   }
