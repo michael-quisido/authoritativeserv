@@ -15,7 +15,13 @@ function raw403(body: string) {
 function clientIp(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "";
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp;
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp;
+  const trueClient = req.headers.get("true-client-ip");
+  if (trueClient) return trueClient;
+  return "";
 }
 
 export async function proxy(request: NextRequest) {
@@ -23,7 +29,7 @@ export async function proxy(request: NextRequest) {
     const ip = clientIp(request);
     const isLocal = ip === "127.0.0.1" || ip === "::1" || ip === "";
     if (!isLocal && !appConfig.allowedIps.includes(ip)) {
-      return raw403("IP not authorized");
+      return raw403(`IP not authorized (detected: ${ip || "empty"})`);
     }
   }
 
