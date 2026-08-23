@@ -17,48 +17,59 @@ export interface GateState {
 }
 
 export async function gateSendCode(_prev: GateState, formData: FormData): Promise<GateState> {
-  if (!(await verifyOrigin())) return { errors: ["Invalid request origin."] };
-  const { session } = await ensureSession();
-  if (session.data.csrf && !verifyCsrfToken(session.data, formData.get("csrf"))) {
-    return { errors: ["Invalid session."] };
+  try {
+    if (!(await verifyOrigin())) return { errors: ["Invalid request origin."] };
+    const { session } = await ensureSession();
+    if (session.data.csrf && !verifyCsrfToken(session.data, formData.get("csrf"))) {
+      return { errors: ["Invalid session."] };
+    }
+    const data = { ...session.data, csrf: session.data.csrf ?? newCsrfToken() };
+    if (data.csrf !== session.data.csrf) await updateSessionData(session.id, data);
+    const ruleId = Number(formData.get("rule_id"));
+    const rule = await getRuleById(ruleId);
+    if (!rule) return { errors: ["Unknown rule."] };
+    const rateId = await tryRecordRateLimit(`rule:${ruleId}`);
+    if (rateId === null) return { errors: ["Too many codes requested. Try again later."] };
+    const code = await issueCode({ type: "user", adminId: null, userId: rule.associated_user_id, ruleId });
+    const email = await getUserEmail(rule.associated_user_id);
+    const sent = await sendVerificationEmail(email ?? "", code);
+    if (!sent) {
+      await deleteRateLimitRecord(rateId);
+      return { errors: ["Could not send the code. Please try again."] };
+    }
+    return { errors: [], ok: true, message: "A verification code was sent to your email." };
+  } catch (err) {
+    console.error("gateSendCode error:", err);
+    return { errors: ["An unexpected error occurred. Please try again."] };
   }
-  const data = { ...session.data, csrf: session.data.csrf ?? newCsrfToken() };
-  if (data.csrf !== session.data.csrf) await updateSessionData(session.id, data);
-  const ruleId = Number(formData.get("rule_id"));
-  const rule = await getRuleById(ruleId);
-  if (!rule) return { errors: ["Unknown rule."] };
-  const rateId = await tryRecordRateLimit(`rule:${ruleId}`);
-  if (rateId === null) return { errors: ["Too many codes requested. Try again later."] };
-  const code = await issueCode({ type: "user", adminId: null, userId: rule.associated_user_id, ruleId });
-  const email = await getUserEmail(rule.associated_user_id);
-  const sent = await sendVerificationEmail(email ?? "", code);
-  if (!sent) {
-    await deleteRateLimitRecord(rateId);
-    return { errors: ["Could not send the code. Please try again."] };
-  }
-  return { errors: [], ok: true, message: "A verification code was sent to your email." };
 }
 
 export async function gateVerify(_prev: GateState, formData: FormData): Promise<GateState> {
-  if (!(await verifyOrigin())) return { errors: ["Invalid request origin."] };
-  const { session } = await ensureSession();
-  if (session.data.csrf && !verifyCsrfToken(session.data, formData.get("csrf"))) {
-    return { errors: ["Invalid session."] };
+  try {
+    if (!(await verifyOrigin())) return { errors: ["Invalid request origin."] };
+    const { session } = await ensureSession();
+    if (session.data.csrf && !verifyCsrfToken(session.data, formData.get("csrf"))) {
+      return { errors: ["Invalid session."] };
+    }
+    const ruleId = Number(formData.get("rule_id"));
+    const rule = await getRuleById(ruleId);
+    if (!rule) return { errors: ["Unknown rule."] };
+    const input = String(formData.get("code") ?? "").trim();
+    if (!codeFormatOk(input)) {
+      await verifyCode({ type: "user", adminId: null, userId: rule.associated_user_id, ruleId }, input);
+      return { errors: ["Code must be exactly 8 alphanumeric characters."] };
+    }
+    if (await verifyCode({ type: "user", adminId: null, userId: rule.associated_user_id, ruleId }, input)) {
+      const data = gateIssue(session.data, ruleId);
+      await updateSessionData(session.id, data);
+      const newToken = await regenerateSessionToken(session.id);
+      await setSessionCookie(newToken);
+      redirect(rule.real_path);
+    }
+    return { errors: ["Invalid or expired code."] };
+  } catch (err) {
+    if (err && typeof err === "object" && "digest" in err) throw err;
+    console.error("gateVerify error:", err);
+    return { errors: ["An unexpected error occurred. Please try again."] };
   }
-  const ruleId = Number(formData.get("rule_id"));
-  const rule = await getRuleById(ruleId);
-  if (!rule) return { errors: ["Unknown rule."] };
-  const input = String(formData.get("code") ?? "").trim();
-  if (!codeFormatOk(input)) {
-    await verifyCode({ type: "user", adminId: null, userId: rule.associated_user_id, ruleId }, input);
-    return { errors: ["Code must be exactly 8 alphanumeric characters."] };
-  }
-  if (await verifyCode({ type: "user", adminId: null, userId: rule.associated_user_id, ruleId }, input)) {
-    const data = gateIssue(session.data, ruleId);
-    await updateSessionData(session.id, data);
-    const newToken = await regenerateSessionToken(session.id);
-    await setSessionCookie(newToken);
-    redirect(rule.real_path);
-  }
-  return { errors: ["Invalid or expired code."] };
 }
