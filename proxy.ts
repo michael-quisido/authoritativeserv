@@ -29,7 +29,7 @@ export async function proxy(request: NextRequest) {
     const ip = clientIp(request);
     const isLocal = ip === "127.0.0.1" || ip === "::1" || ip === "";
     if (!isLocal && !appConfig.allowedIps.includes(ip)) {
-      return raw403(`IP not authorized (detected: ${ip || "empty"})`);
+      return raw403("IP not authorized");
     }
   }
 
