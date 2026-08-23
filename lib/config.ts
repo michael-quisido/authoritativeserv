@@ -26,6 +26,7 @@ export const config = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
+  gateProxyTarget: (process.env.GATE_PROXY_TARGET ?? "").trim(),
   mail: {
     mode: (process.env.MAIL_MODE ?? "log") as "smtp" | "log",
     from: process.env.MAIL_FROM ?? "no-reply@kmcq-gmbh.com",

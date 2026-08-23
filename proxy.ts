@@ -12,6 +12,39 @@ function raw403(body: string) {
   });
 }
 
+async function proxyToTarget(request: NextRequest, target: string): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const targetUrl = new URL(url.pathname + url.search, target);
+  const headers = new Headers(request.headers);
+  headers.set("x-forwarded-host", url.host);
+  headers.set("x-original-url", url.toString());
+  headers.delete("host");
+
+  const init: RequestInit = {
+    method: request.method,
+    headers,
+    redirect: "manual",
+  };
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    init.body = request.body;
+    // @ts-expect-error duplex is needed for streaming body in fetch
+    init.duplex = "half";
+  }
+
+  try {
+    const resp = await fetch(targetUrl.toString(), init);
+    const respHeaders = new Headers(resp.headers);
+    respHeaders.delete("content-security-policy");
+    return new NextResponse(resp.body, {
+      status: resp.status,
+      statusText: resp.statusText,
+      headers: respHeaders,
+    });
+  } catch {
+    return raw403("Upstream service unavailable");
+  }
+}
+
 function clientIp(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
@@ -40,6 +73,9 @@ export async function proxy(request: NextRequest) {
     const session = token ? await getSessionByToken(token) : null;
     if (!gateValid(session?.data, rule.id)) {
       return raw403("Access restricted. Please contact the administrator.");
+    }
+    if (appConfig.gateProxyTarget) {
+      return proxyToTarget(request, appConfig.gateProxyTarget);
     }
   }
 
