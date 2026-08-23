@@ -58,6 +58,7 @@ function clientIp(req: NextRequest): string {
 }
 
 export async function proxy(request: NextRequest) {
+  try {
   if (process.env.NODE_ENV === "production" && appConfig.allowedIps.length > 0) {
     const ip = clientIp(request);
     const isLocal = ip === "127.0.0.1" || ip === "::1" || ip === "";
@@ -100,6 +101,10 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
   return response;
+  } catch (err) {
+    console.error("proxy middleware error:", err);
+    return raw403("Internal error");
+  }
 }
 
 export const config = {
