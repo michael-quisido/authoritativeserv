@@ -40,15 +40,23 @@ export async function getRuleById(ruleId: number): Promise<RuleRow | null> {
   return rows[0] ? (rows[0] as RuleRow) : null;
 }
 
+function normalizePath(p: string): string {
+  return p.length > 1 ? p.replace(/\/+$/, "") : p;
+}
+
 export async function getRuleByRealPath(path: string): Promise<RuleRow | null> {
-  const normalized = path.length > 1 ? path.replace(/\/+$/, "") : path;
-  const [rows] = await pool.execute<RowDataPacket[]>("SELECT * FROM url_rules WHERE real_path = ? LIMIT 1", [normalized]);
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    "SELECT * FROM url_rules WHERE TRIM(TRAILING '/' FROM real_path) = ? LIMIT 1",
+    [normalizePath(path)],
+  );
   return rows[0] ? (rows[0] as RuleRow) : null;
 }
 
 export async function getRuleByDummyPath(path: string): Promise<RuleRow | null> {
-  const normalized = path.length > 1 ? path.replace(/\/+$/, "") : path;
-  const [rows] = await pool.execute<RowDataPacket[]>("SELECT * FROM url_rules WHERE dummy_path = ? LIMIT 1", [normalized]);
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    "SELECT * FROM url_rules WHERE TRIM(TRAILING '/' FROM dummy_path) = ? LIMIT 1",
+    [normalizePath(path)],
+  );
   return rows[0] ? (rows[0] as RuleRow) : null;
 }
 
