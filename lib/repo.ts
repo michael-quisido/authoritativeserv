@@ -41,12 +41,14 @@ export async function getRuleById(ruleId: number): Promise<RuleRow | null> {
 }
 
 export async function getRuleByRealPath(path: string): Promise<RuleRow | null> {
-  const [rows] = await pool.execute<RowDataPacket[]>("SELECT * FROM url_rules WHERE real_path = ? LIMIT 1", [path]);
+  const normalized = path.length > 1 ? path.replace(/\/+$/, "") : path;
+  const [rows] = await pool.execute<RowDataPacket[]>("SELECT * FROM url_rules WHERE real_path = ? LIMIT 1", [normalized]);
   return rows[0] ? (rows[0] as RuleRow) : null;
 }
 
 export async function getRuleByDummyPath(path: string): Promise<RuleRow | null> {
-  const [rows] = await pool.execute<RowDataPacket[]>("SELECT * FROM url_rules WHERE dummy_path = ? LIMIT 1", [path]);
+  const normalized = path.length > 1 ? path.replace(/\/+$/, "") : path;
+  const [rows] = await pool.execute<RowDataPacket[]>("SELECT * FROM url_rules WHERE dummy_path = ? LIMIT 1", [normalized]);
   return rows[0] ? (rows[0] as RuleRow) : null;
 }
 

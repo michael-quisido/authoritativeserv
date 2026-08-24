@@ -67,7 +67,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const path = new URL(request.url).pathname;
+  const rawPath = new URL(request.url).pathname;
+  const path = rawPath.length > 1 ? rawPath.replace(/\/+$/, "") : rawPath;
   const rule = await getRuleByRealPath(path);
   if (rule) {
     const token = request.cookies.get(appConfig.session.cookieName)?.value;
