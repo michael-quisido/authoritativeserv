@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
   },
+  skipTrailingSlashRedirect: true,
   allowedDevOrigins: ["127.0.0.1"],
   devIndicators: false,
   async headers() {
