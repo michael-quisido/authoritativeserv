@@ -12,9 +12,13 @@ function raw403(body: string) {
   });
 }
 
-async function proxyToTarget(request: NextRequest, target: string): Promise<NextResponse> {
+async function proxyToTarget(request: NextRequest, target: string, stripPrefix?: string): Promise<NextResponse> {
   const url = new URL(request.url);
-  const targetUrl = new URL(url.pathname + url.search, target);
+  let pathname = url.pathname;
+  if (stripPrefix && pathname.startsWith(stripPrefix)) {
+    pathname = pathname.slice(stripPrefix.length) || "/";
+  }
+  const targetUrl = new URL(pathname + url.search, target);
   const headers = new Headers(request.headers);
   headers.set("x-forwarded-host", url.host);
   headers.set("x-original-url", url.toString());
@@ -80,7 +84,7 @@ export async function proxy(request: NextRequest) {
       return raw403("Access restricted. Please contact the administrator.");
     }
     if (appConfig.gateProxyTarget) {
-      return proxyToTarget(request, appConfig.gateProxyTarget);
+      return proxyToTarget(request, appConfig.gateProxyTarget, rule.real_path);
     }
   }
 
