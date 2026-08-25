@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { config as appConfig } from "@/lib/config";
-import { getRuleByRealPath } from "@/lib/repo";
+import { getRuleByRealPath, getRuleByRealPathPrefix } from "@/lib/repo";
 import { getSessionByToken } from "@/lib/session";
 import { gateValid } from "@/lib/guard";
 
@@ -69,7 +69,10 @@ export async function proxy(request: NextRequest) {
 
   const rawPath = new URL(request.url).pathname;
   const path = rawPath.length > 1 ? rawPath.replace(/\/+$/, "") : rawPath;
-  const rule = await getRuleByRealPath(path);
+  let rule = await getRuleByRealPath(path);
+  if (!rule && rawPath.length > 1) {
+    rule = await getRuleByRealPathPrefix(rawPath.replace(/\/+$/, ""));
+  }
   if (rule) {
     const token = request.cookies.get(appConfig.session.cookieName)?.value;
     const session = token ? await getSessionByToken(token) : null;

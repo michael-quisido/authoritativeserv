@@ -52,6 +52,14 @@ export async function getRuleByRealPath(path: string): Promise<RuleRow | null> {
   return rows[0] ? (rows[0] as RuleRow) : null;
 }
 
+export async function getRuleByRealPathPrefix(path: string): Promise<RuleRow | null> {
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    "SELECT * FROM url_rules WHERE ? LIKE CONCAT(TRIM(TRAILING '/' FROM real_path), '/%') LIMIT 1",
+    [path],
+  );
+  return rows[0] ? (rows[0] as RuleRow) : null;
+}
+
 export async function getRuleByDummyPath(path: string): Promise<RuleRow | null> {
   const [rows] = await pool.execute<RowDataPacket[]>(
     "SELECT * FROM url_rules WHERE TRIM(TRAILING '/' FROM dummy_path) = ? LIMIT 1",
