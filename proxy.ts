@@ -41,6 +41,7 @@ async function proxyToTarget(request: NextRequest, target: string, stripPrefix?:
     console.log(`[proxy] upstream responded status=${resp.status} content-type=${resp.headers.get("content-type")}`);
     const respHeaders = new Headers(resp.headers);
     respHeaders.delete("content-security-policy");
+    respHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate");
     return new NextResponse(resp.body, {
       status: resp.status,
       statusText: resp.statusText,
