@@ -36,7 +36,9 @@ async function proxyToTarget(request: NextRequest, target: string, stripPrefix?:
   }
 
   try {
+    console.log(`[proxy] fetching ${targetUrl.toString()}`);
     const resp = await fetch(targetUrl.toString(), init);
+    console.log(`[proxy] upstream responded status=${resp.status} content-type=${resp.headers.get("content-type")}`);
     const respHeaders = new Headers(resp.headers);
     respHeaders.delete("content-security-policy");
     return new NextResponse(resp.body, {
@@ -63,6 +65,8 @@ function clientIp(req: NextRequest): string {
 
 export async function proxy(request: NextRequest) {
   try {
+  const reqPath = new URL(request.url).pathname;
+  console.log(`[proxy] invoked path=${reqPath}`);
   if (process.env.NODE_ENV === "production" && appConfig.allowedIps.length > 0) {
     const ip = clientIp(request);
     const isLocal = ip === "127.0.0.1" || ip === "::1" || ip === "";
@@ -78,14 +82,19 @@ export async function proxy(request: NextRequest) {
     rule = await getRuleByRealPathPrefix(rawPath.replace(/\/+$/, ""));
   }
   if (rule) {
+    console.log(`[proxy] match rule=${rule.id} rawPath=${rawPath} real_path=${rule.real_path} target=${appConfig.gateProxyTarget || "(empty)"}`);
     const token = request.cookies.get(appConfig.session.cookieName)?.value;
     const session = token ? await getSessionByToken(token) : null;
     if (!gateValid(session?.data, rule.id)) {
+      console.log(`[proxy] gate DENIED for rule=${rule.id}`);
       return raw403("Access restricted. Please contact the administrator.");
     }
     if (appConfig.gateProxyTarget) {
       return proxyToTarget(request, appConfig.gateProxyTarget, rule.real_path);
     }
+    console.log(`[proxy] gateProxyTarget is empty, falling through`);
+  } else {
+    console.log(`[proxy] no rule for path=${path}`);
   }
 
   const nonce = crypto.randomBytes(32).toString("base64");
