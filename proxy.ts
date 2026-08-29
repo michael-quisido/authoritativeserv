@@ -15,12 +15,14 @@ function raw403(body: string) {
 async function proxyToTarget(request: NextRequest, target: string, stripPrefix?: string): Promise<NextResponse> {
   const url = new URL(request.url);
   let pathname = url.pathname;
-  if (stripPrefix && pathname.startsWith(stripPrefix)) {
-    pathname = pathname.slice(stripPrefix.length) || "/";
+  const prefix = stripPrefix?.replace(/\/+$/, "") || "";
+  if (prefix && pathname.startsWith(prefix)) {
+    pathname = pathname.slice(prefix.length) || "/";
   }
   const targetUrl = new URL(pathname + url.search, target);
   const headers = new Headers(request.headers);
   headers.set("x-forwarded-host", url.host);
+  headers.set("x-forwarded-proto", url.protocol.replace(":", ""));
   headers.set("x-original-url", url.toString());
   headers.delete("host");
 
@@ -39,15 +41,30 @@ async function proxyToTarget(request: NextRequest, target: string, stripPrefix?:
     const resp = await fetch(targetUrl.toString(), init);
     const respHeaders = new Headers(resp.headers);
     respHeaders.delete("content-security-policy");
-    if (stripPrefix) {
+    if (prefix) {
+      const cookies = respHeaders.getSetCookie().map((cookie) =>
+        /path=/i.test(cookie) && /path=\/phpmyadmin\/?/i.test(cookie)
+          ? cookie.replace(/path=\/phpmyadmin\/?/i, "path=" + prefix + "/")
+          : cookie,
+      );
+      respHeaders.delete("set-cookie");
+      for (const c of cookies) respHeaders.append("set-cookie", c);
+
       const location = respHeaders.get("location");
       if (location) {
         try {
           const loc = new URL(location, targetUrl);
-          respHeaders.set("location", stripPrefix + loc.pathname + loc.search + loc.hash);
+          let path = loc.pathname;
+          const upstreamRoot = "/phpmyadmin";
+          if (path === upstreamRoot || path.startsWith(upstreamRoot + "/")) {
+            path = prefix + path.slice(upstreamRoot.length);
+          } else {
+            path = prefix + path;
+          }
+          respHeaders.set("location", url.origin + path + loc.search + loc.hash);
         } catch {
           if (location.startsWith("/")) {
-            respHeaders.set("location", stripPrefix + location);
+            respHeaders.set("location", url.origin + prefix + location);
           }
         }
       }
@@ -131,7 +148,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
+      source: "/((?!api|_next/static|_next/image|__gate|favicon.ico).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

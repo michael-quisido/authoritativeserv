@@ -7,6 +7,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  assetPrefix: "/__gate",
   serverExternalPackages: ["mysql2"],
   experimental: {
     authInterrupts: true,
