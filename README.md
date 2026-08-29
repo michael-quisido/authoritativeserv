@@ -2,6 +2,16 @@
 
 Next.js admin app: secure admin login (password + emailed 8-char code), a settings dashboard (users and dummy→real URL rules), and URL gating — visiting a dummy path emails a one-time code that grants a 10-minute server-side gate to a real path. Built with Next.js 16 (App Router), TypeScript, MySQL, Tailwind.
 
+## Documentation
+
+- [Documentation index](docs/index.md)
+- [Blog post: URL Access Control That Every Team Can Understand](docs/blog.md)
+- [Installation & configuration](docs/installation-and-configuration.md)
+- [Usage guide](docs/usage-guide.md)
+- [Production deployment](docs/production-deployment.md)
+- [Security & architecture](docs/security-and-architecture.md)
+- [Development & testing](docs/development-and-testing.md)
+
 ## Requirements
 - Node 20+, MySQL (database `authnamedb`, user `userauth`), npm.
 
