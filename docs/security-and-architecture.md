@@ -1,8 +1,8 @@
-# Security & Architecture Reference
+# KMCQ GmbH Gate Security Check Point — Security & Architecture Reference
 
-This document explains how authoritativeserv is built and why it is safe to put
-in front of a sensitive URL. It is honest about the security model **and** its
-known limitations.
+This document explains how KMCQ GmbH Gate Security Check Point is built and why
+it is safe to put in front of a sensitive URL. It is honest about the security
+model **and** its known limitations.
 
 ---
 

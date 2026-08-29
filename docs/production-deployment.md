@@ -1,9 +1,9 @@
-# Production Deployment Guide
+# KMCQ GmbH Gate Security Check Point — Production Deployment Guide
 
-This guide documents how authoritativeserv is deployed in production today
-(KMCQ GmbH), and how you can replicate it. It covers process management, HTTPS
-fronting with HAProxy, integrating a CDN, and the phpMyAdmin reverse-proxy
-pattern used with `GATE_PROXY_TARGET`.
+This guide documents how KMCQ GmbH Gate Security Check Point is deployed in
+production today (KMCQ GmbH), and how you can replicate it. It covers process
+management, HTTPS fronting with HAProxy, integrating a CDN, and the phpMyAdmin
+reverse-proxy pattern used with `GATE_PROXY_TARGET`.
 
 ---
 
@@ -17,18 +17,18 @@ Cloudflare (CDN, terminates TLS edge, forwards client IP)
    │
    ▼
 HAProxy (port 443 front-end `https-in`)
-   │  path_beg /php_my_admin_secured  → authoritativeserv :3006
-   │  path_beg /phpmyadmin            → authoritativeserv :3006
+   │  path_beg /php_my_admin_secured  → Gate Security Check Point :3006
+   │  path_beg /phpmyadmin            → Gate Security Check Point :3006
    │  everything else                 → default backend
    ▼
-authoritativeserv (Next.js, `npm start`, port 3006)
+KMCQ GmbH Gate Security Check Point (Next.js, `npm start`, port 3006)
    │  proxy gate check + nonce CSP
    │  GATE_PROXY_TARGET=http://127.0.0.1:3003
    ▼
 phpMyAdmin (PHP built-in server, port 3003, same host)
 ```
 
-The key idea: all traffic lands on authoritativeserv first,
+The key idea: all traffic lands on the Gate Security Check Point first,
 the gate is enforced at the proxy layer, and only *gated* requests are forwarded
 to the phpMyAdmin backend on port 3003.
 
@@ -134,7 +134,7 @@ frontend https-in
     bind *:443 ssl crt /etc/haproxy/certs/kmcq-gmbh.pem
     option forwardfor
 
-    # Route gated paths to authoritativeserv
+    # Route gated paths to the Gate Security Check Point
     acl host_kmcq        hdr(host) -i kmcq-gmbh.com
     acl is_gate          path_beg /php_my_admin_secured
     acl is_real          path_beg /phpmyadmin
@@ -146,8 +146,8 @@ backend url_gate_security_backend
     server app 127.0.0.1:3006 check
 ```
 
-Critically, **`path_beg /phpmyadmin` must route to authoritativeserv (3006) for
-ALL sub-paths** (CSS, JS, images), not just the top-level page. If your web
+Critically, **`path_beg /phpmyadmin` must route to the Gate Security Check Point
+(3006) for ALL sub-paths** (CSS, JS, images), not just the top-level page. If your web
 server or CDN serves static-looking files from disk or a different backend
 first, asset requests will never reach the gate. See Troubleshooting.
 

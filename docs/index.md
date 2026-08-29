@@ -1,4 +1,4 @@
-# authoritativeserv Documentation Index
+# KMCQ GmbH Gate Security Check Point — Documentation Index
 
 | Guide | What it covers |
 |---|---|

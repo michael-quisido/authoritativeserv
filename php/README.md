@@ -1,4 +1,4 @@
-# KMCQ GmbH URL Checkpoint
+# KMCQ GmbH Gate Security Check Point
 
 Secure PHP app: admin login (password + email code), settings dashboard, and dummy→real URL gating with one-time 8-char verification codes.
 

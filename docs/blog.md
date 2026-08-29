@@ -1,4 +1,4 @@
-# Introducing authoritativeserv: URL Access Control That Every Team Can Understand
+# Introducing KMCQ GmbH Gate Security Check Point: URL Access Control That Every Team Can Understand
 
 **Published:** 2026-08-29
 **Tags:** security, access-control, admin, nextjs, url-gating
@@ -10,7 +10,8 @@ had to stay invisible to everyone else on the internet?
 Most teams solve this with VPNs (heavy), htpasswd files (shared passwords, hard
 to rotate), or by hoping nobody finds the URL (hope is not a security policy).
 
-**authoritativeserv** is a small, self-hosted app that solves it differently: it
+**KMCQ GmbH Gate Security Check Point** is a small, self-hosted app that solves
+it differently: it
 puts a simple, verifiable gate in front of any URL. Anyone who wants in must
 claim a one-time code that is emailed to the account holder you designate — and
 that proof grants a short, server-side pass to the real destination.
@@ -21,7 +22,7 @@ production.
 
 ---
 
-## What authoritativeserv does
+## What KMCQ GmbH Gate Security Check Point does
 
 At a glance:
 
@@ -203,5 +204,6 @@ The detailed security model and known limitations are documented in the
 - [Development & testing guide](development-and-testing.md)
 
 If you're an admin looking to lock down a single sensitive URL with minimal
-friction and real accountability, authoritativeserv is a focused, auditable
-answer — no VPN, no shared passwords, just proof of access that expires.
+friction and real accountability, KMCQ GmbH Gate Security Check Point is a
+focused, auditable answer — no VPN, no shared passwords, just proof of access
+that expires.
