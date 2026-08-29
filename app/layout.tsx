@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Authoritative Serv",
-  description: "Authoritative Serv",
+  title: "KMCQ GmbH Gate Security Check Point",
+  description: "KMCQ GmbH Gate Security Check Point",
 };
 
 export default function RootLayout({
