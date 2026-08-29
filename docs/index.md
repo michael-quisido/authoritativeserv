@@ -1,4 +1,4 @@
-# KMCQ GmbH Gate Security Check Point — Documentation Index
+# KMCQ GmbH URL Gate Security Checkpoint — Documentation Index
 
 | Guide | What it covers |
 |---|---|

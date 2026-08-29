@@ -1,4 +1,4 @@
-# KMCQ GmbH Gate Security Check Point
+# KMCQ GmbH URL Gate Security Checkpoint
 
 Next.js admin app: secure admin login (password + emailed 8-char code), a settings dashboard (users and dummy→real URL rules), and URL gating — visiting a dummy path emails a one-time code that grants a 10-minute server-side gate to a real path. Built with Next.js 16 (App Router), TypeScript, MySQL, Tailwind.
 

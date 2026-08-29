@@ -1,4 +1,4 @@
-# KMCQ GmbH Gate Security Check Point — Development & Testing Guide
+# KMCQ GmbH URL Gate Security Checkpoint — Development & Testing Guide
 
 Everything a contributor needs: the dev loop, the test suites, code structure,
 and debugging notes learned while building this app.

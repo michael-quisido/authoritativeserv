@@ -1,6 +1,6 @@
-# KMCQ GmbH Gate Security Check Point — Production Deployment Guide
+# KMCQ GmbH URL Gate Security Checkpoint — Production Deployment Guide
 
-This guide documents how KMCQ GmbH Gate Security Check Point is deployed in
+This guide documents how KMCQ GmbH URL Gate Security Checkpoint is deployed in
 production today (KMCQ GmbH), and how you can replicate it. It covers process
 management, HTTPS fronting with HAProxy, integrating a CDN, and the phpMyAdmin
 reverse-proxy pattern used with `GATE_PROXY_TARGET`.
@@ -21,7 +21,7 @@ HAProxy (port 443 front-end `https-in`)
    │  path_beg /phpmyadmin            → Gate Security Check Point :3006
    │  everything else                 → default backend
    ▼
-KMCQ GmbH Gate Security Check Point (Next.js, `npm start`, port 3006)
+KMCQ GmbH URL Gate Security Checkpoint (Next.js, `npm start`, port 3006)
    │  proxy gate check + nonce CSP
    │  GATE_PROXY_TARGET=http://127.0.0.1:3003
    ▼

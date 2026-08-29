@@ -1,4 +1,4 @@
-# KMCQ GmbH Gate Security Check Point — Usage Guide
+# KMCQ GmbH URL Gate Security Checkpoint — Usage Guide
 
 This guide explains how the app is used, from two points of view:
 

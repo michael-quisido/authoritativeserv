@@ -1,6 +1,6 @@
 # Installation & Configuration
 
-This guide covers getting KMCQ GmbH Gate Security Check Point running from a
+This guide covers getting KMCQ GmbH URL Gate Security Checkpoint running from a
 clean server, plus every configuration option the app understands.
 
 ---
