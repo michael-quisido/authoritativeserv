@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KMCQ GmbH Gate Security Check Point",
-  description: "KMCQ GmbH Gate Security Check Point",
+  title: "KMCQ GmbH URL Gate Security Checkpoint",
+  description: "KMCQ GmbH URL Gate Security Checkpoint",
 };
 
 export default function RootLayout({
