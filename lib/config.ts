@@ -9,7 +9,7 @@ export const config = {
   code: {
     key: process.env.CODE_KEY ?? "83a05165367c5c7d5006bedacef310f4adee1b3272cddebbaec9200efbc2af37",
     length: Number(process.env.CODE_LENGTH ?? 8),
-    ttlSeconds: Number(process.env.CODE_TTL ?? 600),
+    ttlSeconds: Number(process.env.CODE_TTL ?? 21600),
     maxAttempts: Number(process.env.CODE_MAX_ATTEMPTS ?? 5),
   },
   rateLimit: {

@@ -30,7 +30,7 @@ At a glance:
 |---|---|
 | **URL gating** | A "dummy" public path sits in front of a "real" protected path |
 | **Email verification** | Access requires an 8-character, one-time code sent to email |
-| **Time-limited passes** | A valid gate lasts 10 minutes, stored server-side |
+| **Time-limited passes** | A valid gate lasts 6 hours, stored server-side |
 | **Admin dashboard** | Manage users and dummy → real URL rules from a web UI |
 | **Reverse proxying** | After verification, the app can proxy to a backend (e.g. phpMyAdmin) |
 | **IP restrictions** | Optionally limit the whole service to known IPs |
@@ -49,10 +49,10 @@ Visitor clicks a protected link
    /private-folder        ← the "dummy" path (public, safe)
         │
         ▼
- "Send me a code"  →  email lands in the assigned user's inbox
+  "Send me a code"  →  email lands in the assigned user's inbox
         │
         ▼
-  Enter the 8-character code  (one-time, 10-minute expiry)
+   Enter the 8-character code  (one-time, 6-hour expiry)
         │
         ▼
   Gate granted (server-side)  →  redirected to the real path
@@ -143,7 +143,7 @@ etc.) and paths already used by another rule.
 
 - Visit `/private-folder` → a "Restricted Area" page appears.
 - Click **Send me a code** → the assigned user receives an email.
-- Enter the code → you're granted a 10-minute gate and redirected to
+- Enter the code → you're granted a 6-hour gate and redirected to
   `/administrators`.
 - Visit `/administrators` directly (no code) → **403 Forbidden**.
 
@@ -187,7 +187,7 @@ Open-source products are only trustworthy with their trade-offs stated plainly:
   two gates, create two rules with distinct dummy/real paths.
 - Gates and emails are scoped per rule; an admin session does *not* bypass a
   gate.
-- Codes expire after 10 minutes, are single-use, and attempts are capped at 5.
+- Codes expire after 6 hours, are single-use, and attempts are capped at 5.
 - Code *sending* is rate-limited (3 per 10 minutes per rule).
 
 The detailed security model and known limitations are documented in the

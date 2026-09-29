@@ -1,6 +1,6 @@
 # KMCQ GmbH URL Gate Security Checkpoint
 
-Next.js admin app: secure admin login (password + emailed 8-char code), a settings dashboard (users and dummy→real URL rules), and URL gating — visiting a dummy path emails a one-time code that grants a 10-minute server-side gate to a real path. Built with Next.js 16 (App Router), TypeScript, MySQL, Tailwind.
+Next.js admin app: secure admin login (password + emailed 8-char code), a settings dashboard (users and dummy→real URL rules), and URL gating — visiting a dummy path emails a one-time code that grants a 6-hour server-side gate to a real path. Built with Next.js 16 (App Router), TypeScript, MySQL, Tailwind.
 
 ## Documentation
 
@@ -28,13 +28,13 @@ Next.js admin app: secure admin login (password + emailed 8-char code), a settin
 - Admin creates users and URL rules in `/settings`:
   - Dummy path (e.g. `/name-folder`) is the public gate.
   - Real path (e.g. `/administrators`) is protected; direct access returns 403.
-- Visiting the dummy path sends an 8-char code to the rule's assigned user email; entering it grants a 10-minute server-side gate and redirects to the real path.
+- Visiting the dummy path sends an 8-char code to the rule's assigned user email; entering it grants a 6-hour server-side gate and redirects to the real path.
 
 ## Configuration
 All values default in `lib/config.ts`; override via env vars (see `.env.example`): `DB_*`, `CODE_*`, `RATE_LIMIT_*`, `SESSION_SECURE`, `MAIL_*`. Behind HTTPS set `SESSION_SECURE=1`; in production set `MAIL_MODE=smtp`.
 
 ## Security notes
-- Codes: 8 alphanumeric, HMAC-SHA256 hashed in DB, one-time, 10-min expiry, 5-attempt limit, 3-send/10-min rate limit (atomic inserts).
+- Codes: 8 alphanumeric, HMAC-SHA256 hashed in DB, one-time, 6-hour expiry, 5-attempt limit, 3-send/10-min rate limit (atomic inserts).
 - Passwords: bcrypt (bcryptjs, cost 12, verifies the PHP `$2y$` seed). Sessions: DB-backed, `kmcq_sess` cookie httpOnly + SameSite=Strict.
 - CSRF: origin check + per-session token on every Server Action; PDO-style prepared statements; security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`) in `next.config.ts` plus a nonce-based strict CSP generated per-request in `proxy.ts`.
 

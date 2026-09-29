@@ -92,7 +92,7 @@ only.
 |---|---|---|
 | `CODE_KEY` | hard-coded default | HMAC key used to hash codes (set a long random hex string) |
 | `CODE_LENGTH` | `8` | Length of one-time codes |
-| `CODE_TTL` | `600` | Code validity in seconds (10 min) |
+| `CODE_TTL` | `21600` | Code validity in seconds (6 hours) |
 | `CODE_MAX_ATTEMPTS` | `5` | Failed attempts before a code is burned |
 
 ### 4.3 Rate limiting (`RATE_LIMIT_*`)
@@ -196,7 +196,7 @@ DB_USER=userauth
 DB_PASS=passuserauth77
 CODE_KEY=replace-with-a-long-random-hex-secret
 CODE_LENGTH=8
-CODE_TTL=600
+CODE_TTL=21600
 CODE_MAX_ATTEMPTS=5
 RATE_LIMIT_WINDOW=600
 RATE_LIMIT_MAX=3

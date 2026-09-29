@@ -11,7 +11,7 @@ define('DB_PASS', getenv('DB_PASS') ?: 'passuserauth77');
 // --- Security ---
 define('CODE_KEY', getenv('CODE_KEY') ?: '83a05165367c5c7d5006bedacef310f4adee1b3272cddebbaec9200efbc2af37');
 define('CODE_LENGTH', 8);
-define('CODE_TTL', 600);            // seconds (10 minutes)
+define('CODE_TTL', 21600);          // seconds (6 hours)
 define('CODE_MAX_ATTEMPTS', 5);
 define('RATE_LIMIT_WINDOW', 600);   // seconds (10 minutes)
 define('RATE_LIMIT_MAX', 3);        // sends per window per scope

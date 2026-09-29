@@ -38,6 +38,6 @@ function send_email(string $to, string $subject, string $body): bool
 function send_verification_email(string $to, string $code): bool
 {
     $subject = 'Your KMCQ GmbH verification code';
-    $body = "Your one-time verification code is: {$code}\n\nThis code expires in 10 minutes and can only be used once.\n\nIf you did not request this code, please ignore this email.";
+    $body = "Your one-time verification code is: {$code}\n\nThis code expires in 6 hours and can only be used once.\n\nIf you did not request this code, please ignore this email.";
     return send_email($to, $subject, $body);
 }

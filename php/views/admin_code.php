@@ -1,6 +1,6 @@
 <?php /** @var array $errors */ ?>
 <h2>Enter Verification Code</h2>
-<p class="muted">A one-time 8-character code was sent to your email. It expires in 10 minutes.</p>
+<p class="muted">A one-time 8-character code was sent to your email. It expires in 6 hours.</p>
 <?php if (!empty($errors)): ?>
   <div class="flash err"><?= e($errors[0]) ?></div>
 <?php endif; ?>

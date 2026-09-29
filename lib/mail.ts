@@ -38,8 +38,20 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
   }
 }
 
+function formatTtl(seconds: number): string {
+  if (seconds % 3600 === 0) {
+    const hours = seconds / 3600;
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  if (seconds % 60 === 0) {
+    const minutes = seconds / 60;
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  }
+  return `${seconds} seconds`;
+}
+
 export function sendVerificationEmail(to: string, code: string): Promise<boolean> {
   const subject = "Your KMCQ GmbH verification code";
-  const body = `Your one-time verification code is: ${code}\n\nThis code expires in 10 minutes and can only be used once.\n\nIf you did not request this code, please ignore this email.`;
+  const body = `Your one-time verification code is: ${code}\n\nThis code expires in ${formatTtl(config.code.ttlSeconds)} and can only be used once.\n\nIf you did not request this code, please ignore this email.`;
   return sendEmail(to, subject, body);
 }

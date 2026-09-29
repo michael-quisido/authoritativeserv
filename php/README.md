@@ -22,10 +22,10 @@ All commands below run from the `php/` directory.
 - Admin creates users and URL rules in `/settings`:
   - Dummy path (e.g. `/name-folder`) is the public gate.
   - Real path (e.g. `/administrators`) is protected; direct access returns 403.
-- Visiting the dummy path sends an 8-char code to the rule's assigned user email; entering it grants a 10-minute server-side gate and redirects to the real path.
+- Visiting the dummy path sends an 8-char code to the rule's assigned user email; entering it grants a 6-hour server-side gate and redirects to the real path.
 
 ## Security notes
-- Codes: 8 alphanumeric chars, HMAC-SHA256 hashed in DB, one-time, 10-min expiry, 5-attempt limit, 3-send/10-min rate limit.
+- Codes: 8 alphanumeric chars, HMAC-SHA256 hashed in DB, one-time, 6-hour expiry, 5-attempt limit, 3-send/10-min rate limit.
 - Passwords: bcrypt. Sessions: httponly, SameSite=Strict.
 - CSRF tokens on all POST forms; PDO prepared statements; output escaped.
 - Behind HTTPS, export `SESSION_SECURE=1` so session cookies are sent only over TLS (plain HTTP dev runs keep it unset).

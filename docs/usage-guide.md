@@ -30,7 +30,7 @@ This guide explains how the app is used, from two points of view:
 3. An 8-character code is emailed to the admin address.
 4. Open `/login/code` and enter the code.
 
-Both steps are required. The code is one-time, expires after 10 minutes, and
+Both steps are required. The code is one-time, expires after 6 hours, and
 only five wrong attempts are allowed before it is burned. After a successful
 two-step login you land on `/settings`.
 
@@ -110,11 +110,11 @@ assigned to user `alice@example.com`.
 
 3. **The visitor enters the code.**
    The code must be exactly 8 alphanumeric characters. On success they are
-   granted a server-side gate valid for 10 minutes and redirected to
+   granted a server-side gate valid for 6 hours and redirected to
    `/administrators`.
 
 4. **The visitor sees the real destination.**
-   During the 10-minute window, `/administrators` renders the protected
+   During the 6-hour window, `/administrators` renders the protected
    content. Opening it *without* a valid gate returns **403 Forbidden**.
 
 ### Gate behavior details
@@ -123,9 +123,9 @@ assigned to user `alice@example.com`.
   rule.
 - **Admin sessions do not bypass gates.** Even a logged-in admin needs a fresh
   gate to enter a real path (matching the legacy PHP behavior).
-- **Gates expire after 10 minutes** and are stored server-side in the session
+- **Gates expire after 6 hours** and are stored server-side in the session
   row. Expired gates are pruned on read.
-- **Codes are single-use, 10-minute, 5-attempt limited.** Malformed input (e.g.
+- **Codes are single-use, 6-hour, 5-attempt limited.** Malformed input (e.g.
   wrong length) counts as an attempt on purpose, so the lockout can't be
   sidestepped.
 - **Know your user.** Whoever owns the rule's email address controls entry. If

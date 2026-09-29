@@ -75,7 +75,7 @@ Real paths take precedence over dummy paths.
 - Verified with `crypto.timingSafeEqual`.
 - **Single-use** — an atomic `UPDATE ... WHERE used_at IS NULL AND attempts < 5`
   claim, `affectedRows === 1` required.
-- **10-minute expiry**, **5-attempt lockout**, and malformed input still counts
+- **6-hour expiry**, **5-attempt lockout**, and malformed input still counts
   an attempt so the lockout can't be bypassed by typos.
 
 ### Sessions

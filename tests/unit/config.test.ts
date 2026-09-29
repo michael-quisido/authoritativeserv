@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 describe("config", () => {
   it("has the documented defaults", () => {
     expect(config.code.length).toBe(8);
-    expect(config.code.ttlSeconds).toBe(600);
+    expect(config.code.ttlSeconds).toBe(21600);
     expect(config.code.maxAttempts).toBe(5);
     expect(config.rateLimit.windowSeconds).toBe(600);
     expect(config.rateLimit.max).toBe(3);
